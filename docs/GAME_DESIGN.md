@@ -1,5 +1,5 @@
 # BLACKWOOD — THE LAST REFUGE
-## Game Design Document · v0.2 · 2026-11-05
+## Game Design Document · v0.4 · 2026-11-06
 
 > Living design document. Unless explicitly marked as a core direction, all mechanics, names and numbers are provisional.
 
@@ -136,7 +136,7 @@ Minimum slice goals:
 7. Camera pan/zoom and legible fog-of-war / detection.
 8. Track damage, wounded and repair resources.
 
-Technical stack and engine not selected; evaluate Godot 4 vs alternatives for an isometric 2.5D/3D-section architecture. No implementation decisions are implied by the concept imagery.
+The first build targets the **web browser on Cloudflare**. Its prototype stack is TypeScript, Three.js and Vite, with a 3D world shown through an orthographic isometric camera. Prototype geometry is created in code, so Blender is optional. Validate the cutaway, enemy routes, lighting, browser performance and file size before investing in detailed art. See [TECH_STACK.md](TECH_STACK.md). No implementation decisions are implied by the concept imagery.
 
 ## 14. Scope / principles
 Tower defence is the primary loop; internal settlement makes the defence consequential. Maintain intuitive mechanics, constrained resources and readable choices. All values and building lists need playtesting.

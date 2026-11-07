@@ -1,0 +1,17 @@
+:root { font-family: Georgia, 'Times New Roman', serif; color: #f1e4ce; background: #071018; }
+* { box-sizing: border-box; }
+html, body, #app { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+#app { position: relative; }
+#scene, #scene canvas { display: block; width: 100%; height: 100%; }
+.brand { position: absolute; top: clamp(20px, 4vw, 55px); left: clamp(20px, 5vw, 72px); pointer-events: none; text-shadow: 0 2px 18px #000; }
+.brand .eyebrow { font: 600 11px/1.4 system-ui, sans-serif; letter-spacing: .3em; color: #d6a263; }
+.brand h1 { margin: 10px 0 0; font-size: clamp(38px, 5.5vw, 88px); font-weight: 400; letter-spacing: .13em; line-height: 1; }
+.brand p { margin: 8px 0; font-size: clamp(13px, 1.6vw, 22px); letter-spacing: .35em; }
+.controls { position: absolute; left: clamp(15px, 3vw, 42px); right: clamp(15px, 3vw, 42px); bottom: clamp(15px, 3vw, 42px); max-width: 620px; padding: 16px 20px; border: 1px solid #b08a5570; border-radius: 12px; background: #081019db; box-shadow: 0 16px 44px #0009; backdrop-filter: blur(8px); font: 14px/1.4 system-ui, sans-serif; }
+#status { display: block; margin-bottom: 12px; color: #efcf9d; font-weight: 600; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+button { border: 1px solid #bc9460; border-radius: 6px; padding: 9px 13px; background: #604629; color: #fff4df; font: 600 13px system-ui, sans-serif; cursor: pointer; }
+button:hover { background: #806039; }
+button[aria-pressed="false"] { background: #24303b; border-color: #566372; }
+.controls small { display: block; margin-top: 11px; color: #aeb8bf; }
+@media (max-width: 600px) { .brand { top: 20px; left: 18px; } .controls { padding: 12px; } .controls small { display: none; } }

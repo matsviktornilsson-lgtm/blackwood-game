@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071018" />
+    <title>Blackwood — webbprototyp</title>
+  </head>
+  <body>
+    <main id="app">
+      <div id="scene" aria-label="Isometrisk prototyp av Blackwoods bergsvägg"></div>
+      <header class="brand">
+        <span class="eyebrow">TEKNISK PROTOTYP</span>
+        <h1>BLACKWOOD</h1>
+        <p>THE LAST REFUGE</p>
+      </header>
+      <section class="controls" aria-label="Prototypkontroller">
+        <span id="status">Dag — förbered försvaret</span>
+        <div class="buttons">
+          <button id="phase-button" type="button">Starta natt</button>
+          <button id="cutaway-button" type="button" aria-pressed="true">Dölj fönstret</button>
+          <button id="light-button" type="button" aria-pressed="true">Släck ljus</button>
+        </div>
+        <small>Dra för att flytta kameran · scrolla för att zooma</small>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

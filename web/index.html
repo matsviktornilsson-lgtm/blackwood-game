@@ -1,28 +1,91 @@
 <!doctype html>
-<html lang="sv">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#071018" />
-    <title>Blackwood — webbprototyp</title>
+    <title>Blackwood — Night Watch</title>
   </head>
   <body>
     <main id="app">
-      <div id="scene" aria-label="Isometrisk prototyp av Blackwoods bergsvägg"></div>
+      <div id="scene" aria-label="View of the moonlit forest from a room carved into the cliff"></div>
+      <div class="optic" aria-hidden="true"><div class="reticle"></div></div>
+      <div class="flash" aria-hidden="true"></div>
+      <div class="damage" aria-hidden="true"></div>
       <header class="brand">
-        <span class="eyebrow">TEKNISK PROTOTYP</span>
-        <h1>BLACKWOOD</h1>
+        <span>BLACKWOOD</span>
         <p>THE LAST REFUGE</p>
       </header>
-      <section class="controls" aria-label="Prototypkontroller">
-        <span id="status">Dag — förbered försvaret</span>
-        <div class="buttons">
-          <button id="phase-button" type="button">Starta natt</button>
-          <button id="cutaway-button" type="button" aria-pressed="true">Dölj fönstret</button>
-          <button id="light-button" type="button" aria-pressed="true">Släck ljus</button>
-        </div>
-        <small>Dra för att flytta kameran · scrolla för att zooma</small>
+      <section id="briefing" class="briefing" aria-labelledby="briefing-title">
+        <p class="eyebrow">FIRST PLAYTEST</p>
+        <h1 id="briefing-title">Night Watch</h1>
+        <p id="briefing-copy">Start with 20 coins, 10 rounds, and 30 seconds to prepare. Hold the lookout for one minute. Each kill earns 10 coins to spend before the next Night Watch.</p>
+        <p id="best-score" class="score" hidden></p>
+        <button id="start" type="button">Start building</button>
+        <p class="help">Move the mouse or drag to look around. Click to shoot, right-click to use the scope, and press R to reload after each shot. Press M to toggle the music.</p>
+        <details class="audio-credits">
+          <summary>Audio credits</summary>
+          <p>Rifle and bolt recordings from <a href="https://freesound.org/people/gezortenplotz/sounds/43756/" target="_blank" rel="noreferrer">308_rifle_02.wav by gezortenplotz</a> under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer">CC BY 3.0</a>. Trimmed and mixed for Blackwood.</p>
+          <p>The reload uses <a href="https://freesound.org/people/fastson/sounds/399119/" target="_blank" rel="noreferrer">BoltLoad_01.wav by fastson</a> (CC BY 3.0) and <a href="https://freesound.org/people/beerbelly38/sounds/362346/" target="_blank" rel="noreferrer">rifle_open+close breech(2).wav by beerbelly38</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>). Excerpts trimmed and retimed for the animation.</p>
+          <p>Wolf howls recorded at Denali by the <a href="https://www.nps.gov/subjects/sound/sounds-wolf.htm" target="_blank" rel="noreferrer">U.S. National Park Service</a> and released into the public domain. Excerpts trimmed and mixed for distance.</p>
+          <p>Claw Foley uses <a href="https://freesound.org/people/alegemaate/sounds/364709/" target="_blank" rel="noreferrer">Rock on Rock Scrape by Allan Legemaate</a> (CC0). The ledge growl uses <a href="https://freesound.org/people/newagesoup/sounds/338674/" target="_blank" rel="noreferrer">wolf-growl.wav by newagesoup</a> under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>. The lunge uses <a href="https://freesound.org/people/Breviceps/sounds/466830/" target="_blank" rel="noreferrer">Dragon: Snarl, Roar + Attack by Breviceps</a> (CC0). Excerpts trimmed and mixed for Blackwood.</p>
+        </details>
       </section>
+      <dialog id="watch-summary" aria-labelledby="summary-title">
+        <p class="eyebrow">DAWN</p>
+        <h2 id="summary-title"></h2>
+        <dl>
+          <div><dt>Werewolves killed</dt><dd id="summary-kills">0</dd></div>
+          <div><dt>Coins earned</dt><dd id="summary-coins">0</dd></div>
+        </dl>
+        <form method="dialog">
+          <button type="submit" autofocus>Continue to build</button>
+        </form>
+      </dialog>
+      <section id="build-panel" class="build-panel" aria-labelledby="build-title" hidden>
+        <p class="eyebrow">LOOKOUT</p>
+        <h2 id="build-title">Build before nightfall</h2>
+        <fieldset>
+          <legend>Rifle supplies</legend>
+          <button id="buy-ammo" type="button">3 rounds · 15 coins</button>
+          <button id="buy-bolt" type="button">Faster bolt · 30 coins</button>
+          <p class="help">The faster bolt cuts reload time by 20%.</p>
+        </fieldset>
+        <fieldset>
+          <legend>First aid</legend>
+          <button id="buy-health" type="button">Restore 35 health · 20 coins</button>
+          <p class="help">Injuries carry over between watches.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Ledge barricades · 20 coins each</legend>
+          <div id="barricade-lanes" class="build-actions"></div>
+          <p class="help">Delays one lunge on that side by 4 seconds.</p>
+        </fieldset>
+        <fieldset>
+          <legend>Tripwire bells · 15 coins each</legend>
+          <div id="tripwire-lanes" class="build-actions"></div>
+          <p class="help">Rings when a wolf starts climbing that lane. Stays armed between watches.</p>
+        </fieldset>
+        <button id="next-night" type="button">Start next night</button>
+        <p id="build-message" role="status"></p>
+      </section>
+      <p id="cue" class="cue" role="status"></p>
+      <footer class="hud">
+        <div class="watch">
+          <span id="status">Lookout</span>
+          <span><span id="clock-label">Build time</span> <b id="night-clock">0:30</b></span>
+          <span>Watches survived <b id="watches-survived">0</b></span>
+          <span>Total kills <b id="total-kills">0</b></span>
+          <span class="wallet">Coins <b id="wallet">20</b></span>
+          <span class="health">Health <b id="health">100</b></span>
+        </div>
+        <div class="weapon">
+          <span id="ammo">1 loaded · 9 spare</span>
+          <button id="aim" type="button" aria-pressed="false" title="Right-click or Q" disabled>Scope</button>
+          <button id="reload" type="button" title="R" disabled>Reload</button>
+          <button id="music-toggle" type="button" title="M" aria-label="Music" aria-keyshortcuts="M" aria-pressed="true">Music on</button>
+        </div>
+      </footer>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

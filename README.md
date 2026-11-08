@@ -1,6 +1,6 @@
 # Blackwood — The Last Refuge
 
-**Status:** Pre-production / web prototype (v0.4, 2026-11-06).
+**Night Watch** is the first playable browser test. Spend 30 seconds building in a carved lookout, then defend it for 60 seconds as werewolves keep coming through the forest. Survive the watch to build again at dawn. See the [playtest controls](web/README.md) and [first-person concept art](art/concepts/blackwood-cliff-lookout-first-person.png).
 
 An atmospheric isometric dark-fantasy **tower defence + light colony survival** game. Humans have retreated into homes, workshops and defensive chambers **excavated into enormous natural cliffs** above a forest inhabited by hunting werewolves. By day, develop the settlement and prepare. By night, defend its openings against increasingly dangerous climbing packs.
 
@@ -24,7 +24,7 @@ An atmospheric isometric dark-fantasy **tower defence + light colony survival** 
 
 ## Current decisions
 
-Isometric camera is the **preferred design direction**, although exact camera mechanics and cutaway implementation remain unconfirmed. Tower defence is the central game loop; internal settlement management is deliberately lighter than a full colony simulation. The target is a **browser game deployed on Cloudflare**. The first web prototype uses TypeScript, Three.js and Vite, with an orthographic 3D camera. Blender is optional. Design decisions remain revisable.
+The current playtest uses a **first-person perspective** for the night watch. The isometric view remains a candidate for daytime colony management. The design documents describe the earlier tower-defence concept. The target is a **browser game deployed on Cloudflare**. The playtest uses TypeScript, Three.js and Vite.
 
 ## Planned layout
 
@@ -43,4 +43,4 @@ blackwood-game/
 └── web/                  # Browser prototype; Vite builds to web/dist/
 ```
 
-Run the web prototype from `web/` with `npm install` and `npm run dev`. Build with `npm run build`; Cloudflare Pages can serve `web/dist/`. The images are concept and promotional references, not implemented gameplay.
+Run the web prototype from `web/` with `npm ci` and `npm run dev`. Build with `npm run build`; Cloudflare Pages can serve `web/dist/`. The images are concept and promotional references, not implemented gameplay.

@@ -27,6 +27,8 @@ blender --background --python-exit-code 1 --python art/creatures/rig_generated_w
 
 The script writes the skinned GLB and a sibling `batch5-rigged-diagnostics/` folder with the joint and weight report and images of both poses. The landmark guides were traced on Batch 5. Review them before running the script on a different sculpt. The export stays separate from the game asset while the rig is under review.
 
+Add `--fit-puppet` to export the fitted version. This reshapes the skin to the existing climb and attack joints and keeps the generated jaw hinge in the skull. Use `/?preview=ledge-wolf&wolf=v2` to see the fitted model, or `/?preview=ledge-wolf&wolf=v1` for the original. The game selects v2 by default and falls back to v1 if the v2 asset fails to load. The optional `LEDGE_MODEL_EVERYWHERE` constant in `src/wolf-ledge-model.ts` enables the generated skin on the forest approach for performance testing.
+
 ## Audio credits
 
 - Rifle shot and bolt action excerpts from [308_rifle_02.wav by gezortenplotz](https://freesound.org/people/gezortenplotz/sounds/43756/) under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The excerpts were trimmed and mixed for Blackwood. The bolt excerpts were retimed to match the reload.

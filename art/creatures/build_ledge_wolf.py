@@ -10,7 +10,7 @@ import bpy
 from mathutils import Vector, noise
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ledge_skeleton import create_ledge_skeleton
+from ledge_skeleton import create_ledge_skeleton, puppet_rest
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -86,24 +86,7 @@ eye = material("Recessed amber eye", (.25, .108, .028), .30, True)
 eyelid = material("Dark eyelid rim", (.029, .020, .015), .73, True)
 eye_x, eye_forward, eye_height = .114, .853, 1.725
 
-rest = {
-    "Chest": (0, 1.13, .232),
-    "Pelvis": (0, 1.106, .419),
-    "Head": (0, 1.705, -.612),
-    "Jaw": (0, 1.622, -.565),
-    "Tail": (0, 1.09, .706),
-}
-for side, suffix in ((-1, "L"), (1, "R")):
-    rest.update({
-        "Shoulder." + suffix: (side * .342, 1.637, -.177),
-        "Elbow." + suffix: (side * .486, 1.178, -.129),
-        "Wrist." + suffix: (side * .486, .537, -.376),
-        "Hip." + suffix: (side * .229, 1.106, .419),
-        "Knee." + suffix: (side * .349, .706, .201),
-        "Hock." + suffix: (side * .384, .327, .584),
-        "Toes." + suffix: (side * .349, .062, .350),
-    })
-rig = create_ledge_skeleton({name: xyz(point) for name, point in rest.items()})
+rig = create_ledge_skeleton(puppet_rest())
 
 
 def mesh(name, vertices, faces, mat):

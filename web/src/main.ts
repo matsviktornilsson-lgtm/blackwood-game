@@ -164,7 +164,7 @@ function addWolfToScene() {
     part.receiveShadow = true;
   });
   scene.add(wolf.root);
-  return { ...wolf, showLedgeAppearance: createLedgeAppearance(wolf) };
+  return { ...wolf, showLedgeAppearance: createLedgeAppearance(wolf, mistTime) };
 }
 
 type WolfKind = 'regular' | 'stalker' | 'climber';
@@ -185,7 +185,7 @@ function beginApproach(model: ReturnType<typeof addWolfToScene>, route: Approach
   const stage = approach.getPointAt(1);
   const heading = approach.getTangentAt(1).setY(0).normalize();
   resetWolfAnimation(model);
-  model.showLedgeAppearance(false);
+  model.showLedgeAppearance(false, 0);
   model.root.rotation.set(0, 0, 0);
   model.root.visible = false;
   return {
@@ -817,7 +817,7 @@ function updateNight(delta: number) {
     if (motion === 'lunge') poseTime = lungeAge / lungeDuration;
     if (motion === 'strike') poseTime = (attackAge / strikeInterval + strikeMoment) % 1;
     animateWolf(wolf, poseTime, motion, delta, motion === 'strike' ? chamberFloor : groundHeight, assault?.pose);
-    wolf.showLedgeAppearance(nearLedge);
+    wolf.showLedgeAppearance(nearLedge, mistVisibility);
 
     if (!wolf.appeared) {
       wolf.appeared = true;

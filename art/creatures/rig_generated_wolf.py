@@ -11,7 +11,7 @@ from mathutils import Matrix, Quaternion, Vector
 from mathutils.bvhtree import BVHTree
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from ledge_skeleton import PARENTS, create_ledge_skeleton
+from ledge_skeleton import PARENTS, create_ledge_skeleton, puppet_rest
 
 
 # Joint heights traced on front and side views of the selected TRELLIS.2 mesh.
@@ -255,6 +255,70 @@ def export_skin(skin, rig, path):
     )
 
 
+def segment_fit(start, end, new_start, new_end):
+    """Change length along the centerline while preserving the cross section."""
+    direction = end - start
+    new_direction = new_end - new_start
+    scale = new_direction.length / direction.length
+    axis = direction.normalized()
+    turn = axis.rotation_difference(new_direction.normalized())
+
+    def transform(point):
+        relative = point - start
+        return new_start + turn @ (relative + axis * (relative.dot(axis) * (scale - 1)))
+
+    return transform, turn
+
+
+def fit_skin_to_puppet(skin, source):
+    target = puppet_rest()
+    # Keep the original jaw hinge relative to the skull. The ledge driver uses
+    # the puppet's jaw rotation and leaves this fitted local position intact.
+    target["Jaw"] = target["Head"] + source["Jaw"] - source["Head"]
+    transforms = {}
+    for name in ("Pelvis", "Head", "Jaw", "Tail", "Toes.L", "Toes.R"):
+        offset = target[name] - source[name]
+        transforms[name] = lambda point, offset=offset: point + offset
+
+    def shoulder_center(pose):
+        return (pose["Shoulder.L"] + pose["Shoulder.R"]) * .5
+
+    transforms["Chest"], _ = segment_fit(
+        source["Pelvis"], shoulder_center(source), target["Pelvis"], shoulder_center(target),
+    )
+    for side in ("L", "R"):
+        for a, b in (("Shoulder", "Elbow"), ("Elbow", "Wrist"), ("Hip", "Knee"),
+                     ("Knee", "Hock"), ("Hock", "Toes")):
+            start, end = f"{a}.{side}", f"{b}.{side}"
+            transforms[start], turn = segment_fit(source[start], source[end], target[start], target[end])
+            if b == "Wrist":
+                hand_turn = Quaternion().slerp(turn, .65)
+                hand = Matrix.Translation(target[end]) @ hand_turn.to_matrix().to_4x4() @ Matrix.Translation(-source[end])
+                transforms[end] = lambda point, hand=hand: hand @ point
+
+    by_index = {group.index: transforms[group.name] for group in skin.vertex_groups}
+    seam_keys = []
+    for vertex in skin.data.vertices:
+        point = vertex.co.copy()
+        seam_keys.append(tuple(round(component, 5) for component in point))
+        vertex.co = sum((by_index[item.group](point) * item.weight for item in vertex.groups), Vector())
+    skin.data.update()
+    # The source has vertices split at UV seams. Average across those seams
+    # without merging the vertices or changing their UVs.
+    normals = {}
+    for face in skin.data.polygons:
+        for i, index in enumerate(face.vertices):
+            point = skin.data.vertices[index].co
+            prev = skin.data.vertices[face.vertices[i - 1]].co - point
+            following = skin.data.vertices[face.vertices[(i + 1) % len(face.vertices)]].co - point
+            normal = normals.setdefault(seam_keys[index], Vector())
+            normal += face.normal * prev.angle(following, 0)
+    skin.data.normals_split_custom_set_from_vertices([
+        normals.get(key, Vector()).normalized() for key in seam_keys
+    ])
+    return target
+
+
 def render_diagnostics(skin, rig, output):
     scene = bpy.context.scene
     scene.render.engine = "BLENDER_WORKBENCH"
@@ -275,7 +339,7 @@ def render_diagnostics(skin, rig, output):
     scene.collection.objects.link(cam)
     scene.camera = cam
     cam.data.type = "ORTHO"
-    full_scale = skin.dimensions.z * 1.19
+    full_scale = max(skin.dimensions.z * 1.19, skin.dimensions.y * 1.4)
     center = Vector((0, 0, (min(v.co.z for v in skin.data.vertices) + max(v.co.z for v in skin.data.vertices)) * .5))
     mouth = rig.data.bones["Jaw"].head_local + Vector((0, .05, .02)) * (skin.dimensions.z / 2.2)
     for pose in ("rest", "test"):
@@ -299,6 +363,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--fit-puppet", action="store_true", help="Fit the weighted mesh to the game puppet before export.")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     source, target = args.source.resolve(), args.output.resolve()
     if source == target or target.suffix.lower() != ".glb":
@@ -311,16 +376,17 @@ def main():
     positions, original, unit, floor, has_opening = fit_landmarks(skin)
     skin.data.transform(TURN)
     skin.data.update()
+    proxy, proxy_vertices = proxy_mesh(skin, .016 * unit)
+    weight_proxy(proxy, positions)
+    transfer_weights(proxy, skin)
+    jaw_vertices, fallback, max_influences = normalize_skin(skin, original, positions, unit, floor, has_opening)
+    if args.fit_puppet:
+        positions = fit_skin_to_puppet(skin, positions)
     report = [f"Blender {bpy.app.version_string}", f"Source: {source.name}",
               "Joint pivots in game coordinates (meters; X right, Y up, -Z forward):"]
     for name in PARENTS:
         x, y, z = positions[name]
         report.append(f"  {name:12} ({x:+.3f}, {z:+.3f}, {-y:+.3f})")
-    print("\n".join(report), flush=True)
-    proxy, proxy_vertices = proxy_mesh(skin, .016 * unit)
-    weight_proxy(proxy, positions)
-    transfer_weights(proxy, skin)
-    jaw_vertices, fallback, max_influences = normalize_skin(skin, original, positions, unit, floor, has_opening)
     rig = create_ledge_skeleton(positions)
     export_skin(skin, rig, target)
     skin.data.calc_loop_triangles()

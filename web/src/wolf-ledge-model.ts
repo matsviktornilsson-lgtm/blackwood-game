@@ -3,17 +3,23 @@ import { DRACO_GLTF_CONFIG, DRACOLoader } from 'three/addons/loaders/DRACOLoader
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { createWolf } from './wolf';
-import wolfAsset from './assets/werewolf/ledge-wolf.glb?url';
+import { applyValleyFog } from './valley-fog';
+import wolfV1 from './assets/werewolf/ledge-wolf.glb?url';
+import wolfV2 from './assets/werewolf/ledge-wolf-v2.glb?url';
 import coatGrainUrl from './assets/werewolf/short-hair.webp';
 import leatherGrainUrl from './assets/werewolf/hide.webp';
 
-let template: THREE.Group | undefined;
+const LEDGE_MODEL_EVERYWHERE = false;
+type WolfVersion = 'v1' | 'v2';
+let template: { scene: THREE.Group; version: WolfVersion } | undefined;
 const draco = new DRACOLoader().setDecoderPath(DRACO_GLTF_CONFIG).setWorkerLimit(2);
+const gltf = new GLTFLoader().setDRACOLoader(draco);
 const closeupLights = THREE.ShaderChunk.lights_fragment_begin.replace(
   'getPointLightInfo( pointLight, geometryPosition, directLight );',
   'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= 0.48;',
 );
-export const ledgeModelReady = new GLTFLoader().setDRACOLoader(draco).loadAsync(wolfAsset).then(({ scene }) => {
+async function loadLedgeModel(version: WolfVersion) {
+  const { scene } = await gltf.loadAsync(version === 'v2' ? wolfV2 : wolfV1);
   const loader = new THREE.TextureLoader();
   const coatGrain = loader.load(coatGrainUrl);
   const leatherGrain = loader.load(leatherGrainUrl);
@@ -47,16 +53,23 @@ export const ledgeModelReady = new GLTFLoader().setDRACOLoader(draco).loadAsync(
           'outgoingLight += diffuseColor.rgb * vec3(0.115, 0.121, 0.132);\n#include <opaque_fragment>');
     };
   });
-  template = scene;
+  template = { scene, version };
   return true;
-}, error => {
+}
+
+const requested = new URLSearchParams(window.location.search).get('wolf') === 'v1' ? 'v1' : 'v2';
+export const ledgeModelReady = loadLedgeModel(requested).catch(error => {
+  if (requested === 'v1') throw error;
+  console.warn('Could not load the generated ledge werewolf. Using v1.', error);
+  return loadLedgeModel('v1');
+}).catch(error => {
   console.warn('Could not load the ledge werewolf.', error);
   return false;
 }).finally(() => draco.dispose());
 
 type Wolf = ReturnType<typeof createWolf>;
 
-export function createLedgeAppearance(wolf: Wolf) {
+export function createLedgeAppearance(wolf: Wolf, mistTime?: { value: number }) {
   const forestMeshes: THREE.Mesh[] = [];
   wolf.root.traverse(part => {
     if (part instanceof THREE.Mesh && part.visible) forestMeshes.push(part);
@@ -81,22 +94,37 @@ export function createLedgeAppearance(wolf: Wolf) {
   const jawCorrection = new THREE.Quaternion();
   const jawAxis = new THREE.Vector3(1, 0, 0);
   let model: THREE.Object3D | undefined;
+  let version: WolfVersion | undefined;
+  const mistMaterials: THREE.MeshStandardMaterial[] = [];
+  let previousVisibility = 1;
   let drivers: { source: THREE.Object3D; bone: THREE.Bone; offset: THREE.Quaternion }[] = [];
   let showing = false;
 
-  return (close: boolean) => {
+  return (close: boolean, mistVisibility = previousVisibility) => {
+    const everywhere = LEDGE_MODEL_EVERYWHERE && template?.version === 'v2';
+    previousVisibility = mistVisibility;
+    close ||= everywhere && mistVisibility > 0.02;
     if (close && !model && template) {
-      const instance = clone(template);
+      const instance = clone(template.scene);
       const bones = joints.map(([name]) => instance.getObjectByName(THREE.PropertyBinding.sanitizeNodeName(name)));
       if (!bones.every(bone => bone instanceof THREE.Bone)) return;
       model = instance;
+      version = template.version;
       model.name = 'Blender ledge werewolf';
+      model.userData.ledgeWolfVersion = version;
       wolf.root.add(model);
       model.traverse(part => {
         if (!(part instanceof THREE.Mesh)) return;
         part.frustumCulled = false;
         part.receiveShadow = true;
         part.castShadow = !part.name.includes('guard_hair');
+        if (everywhere && part.material instanceof THREE.MeshStandardMaterial) {
+          const material = part.material.clone();
+          material.onBeforeCompile = part.material.onBeforeCompile;
+          if (mistTime) applyValleyFog(material, mistTime);
+          part.material = material;
+          mistMaterials.push(material);
+        }
       });
       wolf.root.getWorldQuaternion(rootRotation).invert();
       drivers = bones.map((bone, index) => ({
@@ -115,11 +143,21 @@ export function createLedgeAppearance(wolf: Wolf) {
       }
     }
     if (!close) return;
+    for (const material of mistMaterials) {
+      const faded = mistVisibility < 1;
+      if (material.alphaHash !== faded) {
+        material.alphaHash = faded;
+        material.needsUpdate = true;
+      }
+      material.opacity = mistVisibility;
+    }
     wolf.root.updateWorldMatrix(true, true);
     // Keep the in-game hand contacts and jaw motion while the Blender skin deforms around the same joints.
     for (const { bone, source, offset } of drivers) {
       const parent = bone.parent!;
-      bone.position.copy(parent.worldToLocal(source.getWorldPosition(worldPosition)));
+      if (source !== wolf.jaw || version === 'v1') {
+        bone.position.copy(parent.worldToLocal(source.getWorldPosition(worldPosition)));
+      }
       parent.getWorldQuaternion(parentRotation).invert();
       source.getWorldQuaternion(worldRotation);
       if (source === wolf.jaw) worldRotation.multiply(jawCorrection.setFromAxisAngle(jawAxis, -wolf.jaw.rotation.x * 0.34));

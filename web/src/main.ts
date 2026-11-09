@@ -5,8 +5,10 @@ import { reloadDuration } from './rifle-reload';
 import { buildLookout, cliffEntry, floorY, forestApproach, groundHeight, lookoutPosition } from './lookout';
 import { createLedgeBarricade } from './ledge-barricade';
 import { createTripwireBell } from './tripwire-bell';
+import { applyValleyFog } from './valley-fog';
 import { animateWolf, animateWolfFall, createWolf, resetWolfAnimation, strikeMoment, type WolfMotion } from './wolf';
 import { planClimb, type ClimbPose } from './wolf-climb';
+import { createLedgeAppearance, ledgeModelReady } from './wolf-ledge-model';
 import './style.css';
 
 const host = document.querySelector<HTMLDivElement>('#scene')!;
@@ -40,6 +42,7 @@ const boltButton = document.querySelector<HTMLButtonElement>('#buy-bolt')!;
 const healthButton = document.querySelector<HTMLButtonElement>('#buy-health')!;
 const barricadeLanes = document.querySelector<HTMLElement>('#barricade-lanes')!;
 const tripwireLanes = document.querySelector<HTMLElement>('#tripwire-lanes')!;
+const ledgePreview = new URLSearchParams(window.location.search).get('preview') === 'ledge-wolf';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(59, 1, 0.06, 620);
@@ -153,18 +156,20 @@ function addWolfToScene() {
   const wolf = createWolf();
   wolf.root.visible = false;
   wolf.root.traverse(part => {
-    if (part instanceof THREE.Mesh && part.visible) {
-      part.castShadow = true;
-      part.receiveShadow = true;
-    }
+    if (!(part instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(part.material) ? part.material : [part.material];
+    materials.forEach(material => applyValleyFog(material, mistTime));
+    if (!part.visible) return;
+    part.castShadow = true;
+    part.receiveShadow = true;
   });
   scene.add(wolf.root);
-  return wolf;
+  return { ...wolf, showLedgeAppearance: createLedgeAppearance(wolf) };
 }
 
 type WolfKind = 'regular' | 'stalker' | 'climber';
 
-function beginApproach(model: ReturnType<typeof createWolf>, route: Approach, bornAt: number, kind: WolfKind) {
+function beginApproach(model: ReturnType<typeof addWolfToScene>, route: Approach, bornAt: number, kind: WolfKind) {
   const [x, z] = route.path[0];
   const drift = THREE.MathUtils.randFloatSpread(19);
   const direction = route.side === 0 ? -1 : 1;
@@ -180,6 +185,7 @@ function beginApproach(model: ReturnType<typeof createWolf>, route: Approach, bo
   const stage = approach.getPointAt(1);
   const heading = approach.getTangentAt(1).setY(0).normalize();
   resetWolfAnimation(model);
+  model.showLedgeAppearance(false);
   model.root.rotation.set(0, 0, 0);
   model.root.visible = false;
   return {
@@ -194,7 +200,7 @@ function beginApproach(model: ReturnType<typeof createWolf>, route: Approach, bo
 }
 
 const wolves: ReturnType<typeof beginApproach>[] = [];
-const wolfPool: ReturnType<typeof createWolf>[] = [];
+const wolfPool: ReturnType<typeof addWolfToScene>[] = [];
 const nightDuration = 60;
 const buildDuration = 30;
 const startingCoins = 20;
@@ -264,6 +270,7 @@ function scoreText(watches: number, kills: number) {
 }
 
 function recordScore() {
+  if (ledgePreview) return;
   if (best && (survived < best.watches || (survived === best.watches && totalKills <= best.kills))) return;
   best = { watches: survived, kills: totalKills };
   try {
@@ -465,7 +472,7 @@ function startNight(lockPointer = true) {
   reloadRemaining = 0;
   shotCooldown = 0;
   yaw = 0;
-  pitch = -0.17;
+  pitch = ledgePreview ? -0.24 : -0.17;
   look(0, 0);
   setScope(false);
   clearWolves();
@@ -473,10 +480,20 @@ function startNight(lockPointer = true) {
   nextArrival = 0.25;
   sectorBag.length = 0;
   for (const sector of sectors) routeBags[sector].length = 0;
+  if (ledgePreview) {
+    nextArrival = Infinity;
+    const wolf = beginApproach(wolfPool.pop() ?? addWolfToScene(), nextApproach(), 0, 'regular');
+    const { foot } = entries[1][0];
+    reserveClimb(wolf, foot, new THREE.Vector3(0, 0, 1), 1);
+    if (wolf.assault) wolf.assault.climbAt = 1.35 - wolf.assault.climbTime;
+    wolf.warns = false;
+    wolves.push(wolf);
+  }
   hideBriefing();
   status.textContent = 'Watch ' + night;
   const watchCue = night === 1 ? 'Hold until dawn. Watch the gaps between the trees.' : 'Watch ' + night + ' · Hold until dawn.';
-  showCue(rounds === 0 && reserve > 0 ? 'Press R to chamber a round.' : watchCue, 5);
+  const message = ledgePreview ? 'Watch the center of the ledge.' : watchCue;
+  showCue(rounds === 0 && reserve > 0 ? 'Press R to chamber a round.' : message, 5);
   updateHud();
   enableAudio();
   updateMusic();
@@ -627,15 +644,16 @@ function updateArrivals() {
   }
 }
 
-function reserveClimb(wolf: typeof wolves[number], position: THREE.Vector3, direction: THREE.Vector3) {
+function reserveClimb(wolf: typeof wolves[number], position: THREE.Vector3, direction: THREE.Vector3, preferredLane?: number) {
   const openLanes = entries.flatMap((_, lane) =>
     wolves.some(other => other.downAt === null && other.assault?.lane === lane) ? [] : [lane],
   );
   if (!openLanes.length) return;
   const options = openLanes.length > 1 ? openLanes.filter(lane => lane !== lastLane) : openLanes;
-  const lane = options[Math.floor(Math.random() * options.length)];
+  const lane = preferredLane ?? options[Math.floor(Math.random() * options.length)];
   const choices = entries[lane];
-  const index = lastEntry[lane] < 0 ? Math.floor(Math.random() * choices.length) : 1 - lastEntry[lane];
+  const index = preferredLane !== undefined ? 0
+    : lastEntry[lane] < 0 ? Math.floor(Math.random() * choices.length) : 1 - lastEntry[lane];
   const entry = choices[index];
   lastEntry[lane] = index;
   lastLane = lane;
@@ -701,6 +719,7 @@ function updateNight(delta: number) {
     if (wolf.downAt !== null) {
       const fall = THREE.MathUtils.clamp((elapsed - wolf.downAt) / 0.42, 0, 1);
       animateWolfFall(wolf, fall);
+      wolf.showLedgeAppearance(wolf.climbing);
       continue;
     }
 
@@ -787,7 +806,8 @@ function updateNight(delta: number) {
       ? -0.32 * THREE.MathUtils.smoothstep(climbAge, 0, 0.38) * (1 - crest)
       : 0;
     const peeking = motion === 'peek';
-    wolf.root.visible = motion !== 'climb' && mistVisibility > 0.02;
+    const nearLedge = !!assault && peekAge >= -0.46;
+    wolf.root.visible = (motion !== 'climb' || nearLedge) && mistVisibility > 0.02;
     wolf.setMistVisibility(mistVisibility);
     if (assault) {
       assault.pose.progress = THREE.MathUtils.clamp(climbAge / assault.climbTime, 0, 1);
@@ -797,6 +817,7 @@ function updateNight(delta: number) {
     if (motion === 'lunge') poseTime = lungeAge / lungeDuration;
     if (motion === 'strike') poseTime = (attackAge / strikeInterval + strikeMoment) % 1;
     animateWolf(wolf, poseTime, motion, delta, motion === 'strike' ? chamberFloor : groundHeight, assault?.pose);
+    wolf.showLedgeAppearance(nearLedge);
 
     if (!wolf.appeared) {
       wolf.appeared = true;
@@ -844,8 +865,21 @@ function updateNight(delta: number) {
 
 startButton.addEventListener('click', () => {
   if (paused) startNight();
-  else startRun();
+  else {
+    startRun();
+    if (ledgePreview) startNight();
+  }
 });
+if (ledgePreview) {
+  heading.textContent = 'Werewolf at the ledge';
+  briefing.textContent = 'One werewolf is already climbing the center approach. Watch it grip the ledge, rise, and lunge.';
+  startButton.textContent = 'Preview encounter';
+  startButton.disabled = true;
+  void ledgeModelReady.then(ready => {
+    startButton.disabled = !ready;
+    if (!ready) briefing.textContent = 'The werewolf model could not load. Reload the page to retry.';
+  });
+}
 nextNightButton.addEventListener('click', () => { if (phase === 'build') startNight(); });
 watchSummary.addEventListener('close', () => { if (phase === 'summary') beginBuild(); });
 function toggleScope() {
@@ -1014,7 +1048,7 @@ renderer.setAnimationLoop(now => {
   rifle.position.set(0.267 - present * 0.176, -0.349 + present * 0.194, -0.751 + recoil * 0.39 + present * 0.046);
   rifle.rotation.set(0.042 + recoil + present * 0.135, 0.183 + present * 0.32, -0.088 + present * 1.04);
   poseReload(reloadProgress);
-  glow.intensity = 18 + Math.sin(now * 0.006) * 1.2 + Math.sin(now * 0.017) * 0.7;
+  glow.intensity = 12.5 + Math.sin(now * 0.006) * 0.73 + Math.sin(now * 0.017) * 0.36;
   app.classList.toggle('shot', phase === 'night' && !paused && shotCooldown > 0.56);
   mistTime.value = now / 1000;
   renderer.render(scene, camera);

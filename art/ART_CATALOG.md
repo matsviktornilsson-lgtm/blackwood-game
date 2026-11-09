@@ -84,9 +84,25 @@ The eight WebP textures in `web/src/assets/lookout/` were produced with the buil
 
 > Create a production game asset sheet of exactly THREE separate full-height mature spruce tree cutouts for Blackwood. Use the spruce silhouettes in the attached concept image as the style and species reference. Transparent background with a clean true alpha channel. A wide horizontal image divided conceptually into three equal-width columns, one entire centered tree per column, generous transparent margin around each tree, no overlapping branches between columns, all root bases horizontally aligned at about 96 percent of the image height. Left is a dense Norway spruce, center is a taller and more irregular old spruce with open ragged boughs, right is a slightly windswept narrow spruce. Each is viewed from a modestly elevated lookout angle, seen as a natural whole tree, accurate botanical silhouettes with many fine drooping boughs and layered needle textures, visible narrow trunks at the bottom. Quiet photorealistic environment game asset, neutral low-contrast charcoal green with cool gray detail, no baked hard side lighting, no ground, no shadows outside the trees, no room, no sky, no lettering, no labels. These cutouts will be placed far away in a real 3D nighttime forest.
 
+### Cloud deck
+
+`web/src/assets/lookout/cloud-deck.webp` was made with the built-in ImageGen tool and compressed to WebP. The game draws the moon and distant ridges separately.
+
+> Use case: photorealistic-natural. Generate a wide high-resolution production sky matte for a realistic first-person 3D survival game, photographed from a mountain overlook at blue hour by moonlight. Entire frame is sky and distant cloud strata only, with dark muted indigo-blue at top, luminous but subdued silver-blue breaks among rolling realistic stratocumulus and broad optically thin wisps in the middle, and soft low contrast steel-blue haze in the bottom quarter. Believable aerial cloud density and smooth photographic tonal gradation, fine subtle cloud detail, no painting strokes. Front-facing wide shot, low light but the cloud forms are readable, organic uneven negative space, bottom edge uniform smoky blue blending away. No moon or obvious light disk, no stars, no sun, no landscape, no trees, no objects, no text, no borders. Wide landscape aspect ratio.
+
 ## Werewolf surface materials
 
 The four WebP tiles in `web/src/assets/werewolf/` were generated with the built-in ImageGen tool using `art/promotional/blackwood-promo-no-text.png` and `inspiration/ChatGPT Image Nov 6, 2026, 07_11_55 AM.jpg` as references. The tiles were cropped from the atlas, blended at the edges for tiling, and mapped onto the animated Three.js model.
+
+### Ledge werewolf
+
+[Editable Blender model](creatures/blackwood-ledge-wolf.blend) · [Build script](creatures/build_ledge_wolf.py) · [Sculpt reference](creatures/blackwood-ledge-wolf-reference.webp)
+
+The Blender model supplies the near creature skin and fur. The game drives its nineteen bones from the existing climb and attack rig. The compressed GLB is used for the final approach to the ledge, the reveal, and the attack.
+
+The reference was made with the built-in ImageGen tool:
+
+> Photoreal creature sculpt reference sheet for Blackwood, grounded nocturnal survival horror. One same bipedal gray-wolf werewolf shown as front three-quarter upper-body view and exact side profile close-up on a clean desaturated gray background, diffuse lighting for studying anatomy. Believable adult timber wolf skull, long low narrow tapered muzzle with black pebbled nose, heavy orbital brow, small deep amber eyes, short torn ears buried in coarse matted charcoal fur. Broad sloping humped shoulders with long lean muscular arms and large five-fingered clawed hands that can grab a cliff, tapered ribcage and humanoid lower body implied. Fur follows the anatomy with rain-matted uneven clumps around cheek, neck and shoulders. Mouth slightly open, canine lip folds and natural small incisors, predatory restrained expression, no oversized monster teeth. Anatomical creature VFX practical-effects quality, intimidating from posture and mass. No clothing, text, scenic environment, fantasy magic, collar, diagram labels, cartoon proportions, or glowing eyes. Use as a reference for a 3D sculpt, not a game screenshot.
 
 ### Werewolf material atlas prompt
 

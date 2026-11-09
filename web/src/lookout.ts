@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { box, scatter } from './geometry';
-import { groundTexture, horizonTexture, slateSurface, spruceSprites, weatheredWood } from './lookout-materials';
+import { cloudDeckTexture, groundTexture, slateSurface, spruceSprites, weatheredWood } from './lookout-materials';
+import { applyValleyFog } from './valley-fog';
 
 export const floorY = 18.4;
 export const lookoutPosition = new THREE.Vector3(0, floorY + 2.02, 4.85);
@@ -122,20 +123,24 @@ function buildTerrain(scene: THREE.Scene) {
   const positions = shape.attributes.position;
   const colors: number[] = [];
   const shade = new THREE.Color();
-  const forest = new THREE.Color('#788d80');
-  const clearing = new THREE.Color('#c0c3bf');
+  const forest = new THREE.Color('#6f8170');
+  const clearing = new THREE.Color('#aaa18a');
   for (let i = 0; i < positions.count; i++) {
     const x = positions.getX(i);
     const z = positions.getZ(i);
     positions.setY(i, groundHeight(x, z));
     shape.attributes.uv.setXY(i, x * 0.18, z * 0.18);
     const open = 1 - THREE.MathUtils.smoothstep(trailDistance(x, z), 0.85, 5.0);
-    shade.copy(forest).lerp(clearing, open * 0.85).multiplyScalar(0.88 + scatter(i + 227) * 0.20);
+    const patches = 0.5 + 0.24 * Math.sin(x * 0.26 + z * 0.15) + 0.20 * Math.sin(z * 0.37 - x * 0.43);
+    shade.copy(forest).lerp(clearing, open * 0.52 + patches * 0.31)
+      .multiplyScalar(0.68 + patches * 0.41 + scatter(i + 227) * 0.12);
     colors.push(shade.r, shade.g, shade.b);
   }
   shape.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   shape.computeVertexNormals();
-  const terrain = new THREE.Mesh(shape, new THREE.MeshStandardMaterial({ map: groundTexture, vertexColors: true, roughness: 0.96 }));
+  const terrain = new THREE.Mesh(shape, new THREE.MeshStandardMaterial({
+    map: groundTexture, bumpMap: groundTexture, bumpScale: 0.028, vertexColors: true, roughness: 0.96,
+  }));
   scene.add(terrain);
   return terrain;
 }
@@ -180,22 +185,47 @@ function buildForest(scene: THREE.Scene) {
   const tint = new THREE.Color();
   spruceSprites.forEach(({ map, width }, variant) => {
     const belongsToVariant = (_: unknown, index: number) => index % spruceSprites.length === variant;
-    const group = [...far.filter(belongsToVariant), ...near.filter(belongsToVariant)];
-    const material = new THREE.MeshBasicMaterial({ map, color: '#bfccd3', alphaTest: 0.39 });
+    const saplings: Spruce[] = [];
+    for (let i = 0; i < 190; i++) {
+      const anchor = near[Math.floor(scatter(i + variant * 397 + 99) * near.length)];
+      const x = anchor.x + (scatter(i + variant * 517 + 1700) - 0.5) * 6.4;
+      const z = anchor.z - scatter(i + variant * 601 + 105) * 5.6;
+      if (trailDistance(x, z) < 2.45 || (Math.abs(x) < 10.5 && z > -23)) continue;
+      saplings.push({ x, z, height: 0.38 + scatter(i + variant * 947 + 52) ** 2 * 1.65 });
+    }
+    const group = [...far.filter(belongsToVariant), ...near.filter(belongsToVariant), ...saplings];
+    const material = new THREE.MeshBasicMaterial({ map, color: '#bdc9c6', alphaTest: 0.36, alphaToCoverage: true });
     const canopy = new THREE.InstancedMesh(sprite, material, group.length);
     canopy.name = 'Spruce canopy';
     group.forEach(({ x, z, height }, index) => {
       const yaw = Math.atan2(lookoutPosition.x - x, lookoutPosition.z - z);
       const spread = z > -52 && Math.abs(x) < 44 ? 0.79 : 1;
+      const variation = scatter(index + variant * 821 + 63);
       transform.position.set(x, groundHeight(x, z), z);
-      transform.rotation.set(0, yaw, 0);
-      transform.scale.set(height * width * spread, height, 1);
+      transform.rotation.set(0, yaw, (variation - 0.5) * 0.085);
+      transform.scale.set(height * width * spread * (0.84 + variation * 0.36), height, 1);
       transform.updateMatrix();
       canopy.setMatrixAt(index, transform.matrix);
-      canopy.setColorAt(index, tint.setScalar(0.82 + scatter(index + variant * 113) * 0.18));
+      const brightness = 0.64 + scatter(index + variant * 113) * 0.35;
+      canopy.setColorAt(index, tint.setRGB(brightness * (0.95 + variation * 0.1), brightness, brightness * (0.92 + variation * 0.11)));
     });
     scene.add(canopy);
   });
+  const stones = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0),
+    new THREE.MeshStandardMaterial({ color: '#83887c', roughness: 0.91 }), 320);
+  stones.name = 'Forest stones';
+  for (let i = 0; i < stones.count; i++) {
+    const x = (scatter(i + 3982) - 0.5) * 110;
+    const z = -15 - scatter(i + 8901) * 95;
+    const size = 0.10 + scatter(i + 5141) ** 2 * 0.53;
+    transform.position.set(x, groundHeight(x, z) - size * 0.08, z);
+    transform.rotation.set(0.24, scatter(i + 17) * Math.PI, -0.17);
+    transform.scale.set(size, size * 0.42, size * 0.66);
+    transform.updateMatrix();
+    stones.setMatrixAt(i, transform.matrix);
+    stones.setColorAt(i, tint.setScalar(0.47 + scatter(i + 332) * 0.5));
+  }
+  scene.add(stones);
   return { trunks, trees };
 }
 
@@ -233,7 +263,7 @@ function buildRoom(scene: THREE.Scene) {
   const iron = new THREE.MeshStandardMaterial({ color: '#272728', metalness: 0.52, roughness: 0.65 });
 
   function surface(kind: 'floor' | 'roof' | 'left' | 'right' | 'back', seed: number) {
-    const shape = new THREE.PlaneGeometry(1, 1, 20, 14);
+    const shape = new THREE.PlaneGeometry(1, 1, 64, 48);
     const position = shape.attributes.position;
     const colors: number[] = [];
     const shade = new THREE.Color();
@@ -242,18 +272,25 @@ function buildRoom(scene: THREE.Scene) {
       const u = position.getX(i) + 0.5;
       const v = position.getY(i) + 0.5;
       const jitter = scatter(i + seed) - 0.5;
-      const strata = Math.sin(v * 42 + u * 2.2) * 0.10 + Math.sin(u * 10 + v * 9) * 0.11;
+      const strata = Math.sin(v * 36 + u * 8.5) * 0.078 + Math.sin(u * 14 + v * 7) * 0.125;
+      const ledge = Math.sin(u * 17.2) * 0.16 + Math.sin(u * 43.1 + 1.7) * 0.065;
       const x = (u - 0.5) * 8.6;
-      const z = v * 8.3 - 0.2;
+      const z = v * 8.3 - 0.2 + ledge * (1 - v) ** 3;
+      const arch = 0.53 * THREE.MathUtils.smoothstep(Math.abs(x), 2.75, 4.35);
       switch (kind) {
-        case 'floor': position.setXYZ(i, x, jitter * 0.13, z); break;
-        case 'roof': position.setXYZ(i, x, 3.35 + jitter * 0.27 + Math.sin(u * 7) * 0.22, z); break;
-        case 'left': position.setXYZ(i, -3.91 + strata + jitter * 0.35, v * 3.65 - 0.14, u * 8.3 - 0.2); break;
-        case 'right': position.setXYZ(i, 3.92 + strata + jitter * 0.35, v * 3.65 - 0.14, u * 8.3 - 0.2); break;
-        case 'back': position.setXYZ(i, x, v * 3.65 - 0.14, 7.9 + jitter * 0.24); break;
+        case 'floor': position.setXYZ(i, x, jitter * 0.045 + strata * 0.12, z); break;
+        case 'roof': position.setXYZ(i, x, 3.52 - arch + strata + ledge * (1 - v) * 0.77 + jitter * 0.055, z); break;
+        case 'left':
+        case 'right': {
+          const side = kind === 'left' ? -1 : 1;
+          const shoulder = Math.sin(v * 11.5 + side * 0.8) * 0.19 * (1 - u) ** 2;
+          position.setXYZ(i, side * (3.93 + shoulder) + strata + jitter * 0.065, v * 3.8 - 0.17, u * 8.3 - 0.22 + Math.sin(v * 19) * 0.14 * (1 - u) ** 3);
+          break;
+        }
+        case 'back': position.setXYZ(i, x, v * 3.8 - 0.17, 7.9 + strata + jitter * 0.08); break;
       }
-      const towardOpening = 1 - v;
-      shade.copy(base).multiplyScalar(0.70 + towardOpening * 0.22 + jitter * 0.14 + Math.sin(v * 39 + u) * 0.08);
+      const towardOpening = 1 - (kind === 'left' || kind === 'right' ? u : v);
+      shade.copy(base).multiplyScalar(0.72 + towardOpening * 0.18 + jitter * 0.042 + strata * 0.37);
       colors.push(shade.r, shade.g, shade.b);
     }
     shape.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -267,19 +304,23 @@ function buildRoom(scene: THREE.Scene) {
   const blockers: THREE.Object3D[] = [
     floor, surface('roof', 335), surface('left', 630), surface('right', 921), surface('back', 182),
   ];
-  const sill: THREE.Object3D[] = [floor];
-  for (let i = 0; i < 14; i++) {
-    const x = -4.4 + i * 0.67;
-    const lipRock = rock(room, solidRock, i, x, -0.29, -0.15 - scatter(i + 12) * 0.13, 0.66, 0.28 + scatter(i + 311) * 0.24, 0.49);
-    sill.push(lipRock);
-    blockers.push(lipRock);
-    blockers.push(rock(room, solidRock, i + 20, x, 3.48 + Math.sin(i * 1.74) * 0.12, -0.24, 0.71, 0.30 + scatter(i + 221) * 0.34, 0.62));
+  // Follow the same stone shelf for the visible edge, bullet occlusion, and wolf handholds.
+  const lipShape = new THREE.PlaneGeometry(1, 1, 72, 4);
+  const lipPositions = lipShape.attributes.position;
+  const lipProfile = [[0.40, -0.060], [-0.12, 0.025], [-0.45, -0.05], [-0.66, -0.27], [-0.53, -0.82]];
+  for (let i = 0; i < lipPositions.count; i++) {
+    const x = lipPositions.getX(i) * 8.8;
+    const row = Math.round((0.5 - lipPositions.getY(i)) * (lipProfile.length - 1));
+    const [z, y] = lipProfile[row];
+    const fracture = Math.sin(x * 1.97 + row * 0.64) * 0.088 + Math.sin(x * 5.3 - row * 0.71) * 0.034;
+    lipPositions.setXYZ(i, x, y + fracture * 0.76, z + fracture * 1.43);
   }
-  for (const side of [-1, 1]) {
-    for (let i = 0; i < 6; i++) {
-      blockers.push(rock(room, solidRock, i + side * 20, side * 4, 0.35 + i * 0.55, -0.29, 0.54, 0.63, 0.7));
-    }
-  }
+  lipShape.computeVertexNormals();
+  solidRock.side = THREE.DoubleSide;
+  const lip = new THREE.Mesh(lipShape, solidRock);
+  room.add(lip);
+  blockers.push(lip);
+  const sill: THREE.Object3D[] = [floor, lip];
 
   const bench = new THREE.Group();
   bench.position.set(-2.85, 0, 1.05);
@@ -362,13 +403,13 @@ function buildRoom(scene: THREE.Scene) {
     lamp.add(halo);
   }
 
-  const glow = new THREE.PointLight('#ffad61', 18, 12, 2);
+  const glow = new THREE.PointLight('#ffc18b', 12.5, 11, 2);
   glow.position.set(0.064, -0.012, 0);
   lamp.add(glow);
-  const fill = new THREE.PointLight('#c58a5c', 4.5, 8, 2);
+  const fill = new THREE.PointLight('#d49d74', 5.2, 7.6, 2);
   fill.position.set(-1.7, 1.25, 1.9);
   room.add(fill);
-  const moonSpill = new THREE.PointLight('#8eafcf', 4.9, 8.0, 2);
+  const moonSpill = new THREE.PointLight('#9cb4cc', 4.0, 8.0, 2);
   moonSpill.position.set(2.75, 2.3, 0.74);
   room.add(moonSpill);
   const reflectedLamplight = new THREE.PointLight('#b8aa98', 2.65, 4.5, 2);
@@ -442,27 +483,52 @@ function buildCliff(scene: THREE.Scene) {
   return cliffBlockers;
 }
 
-function buildSky(scene: THREE.Scene) {
+function buildSky(scene: THREE.Scene, time: { value: number }) {
   const sky = new THREE.Mesh(new THREE.SphereGeometry(325, 40, 24), new THREE.ShaderMaterial({
-    uniforms: { horizon: { value: horizonTexture } },
+    uniforms: { clouds: { value: cloudDeckTexture }, time },
     side: THREE.BackSide,
     depthWrite: false,
     toneMapped: false,
     vertexShader: 'varying vec3 direction; void main() { direction = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: `
-      uniform sampler2D horizon;
+      uniform sampler2D clouds;
+      uniform float time;
       varying vec3 direction;
+
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = smoothstep(0.0, 1.0, fract(p));
+        vec4 h = fract(sin(vec4(dot(i, vec2(127.1, 311.7))) + vec4(0.0, 127.1, 311.7, 438.8)) * 43758.5453);
+        return mix(mix(h.x, h.y, f.x), mix(h.z, h.w, f.x), f.y);
+      }
+
       void main() {
         vec3 ray = normalize(direction);
         float azimuth = atan(ray.x, -ray.z);
         float altitude = asin(ray.y);
-        float skyV = altitude < 0.08 ? 0.20 + (altitude - 0.015) * 4.15 : 0.47 + (altitude - 0.08) / 0.58;
-        vec2 uv = vec2(0.49 + azimuth / 1.8, skyV);
-        float frame = smoothstep(0.0, 0.12, uv.x) * smoothstep(0.0, 0.12, 1.0 - uv.x)
-          * smoothstep(0.0, 0.19, uv.y) * smoothstep(0.0, 0.17, 1.0 - uv.y);
-        vec3 ink = mix(vec3(0.037, 0.061, 0.085), vec3(0.007, 0.012, 0.023), smoothstep(-0.13, 0.5, altitude));
-        vec3 matte = texture2D(horizon, clamp(uv, 0.0, 1.0)).rgb;
-        gl_FragColor = vec4(mix(ink, matte, frame), 1.0);
+        vec2 uv = vec2(0.50 + azimuth / 2.26 + 0.028 * sin(time * 0.017), 0.39 + altitude * 1.15);
+        float frame = smoothstep(0.0, 0.14, uv.x) * smoothstep(0.0, 0.14, 1.0 - uv.x)
+          * smoothstep(0.0, 0.19, uv.y) * smoothstep(0.0, 0.25, 1.0 - uv.y);
+        vec3 ink = mix(vec3(0.034, 0.048, 0.061), vec3(0.005, 0.010, 0.022), smoothstep(-0.09, 0.49, altitude));
+        vec3 matte = texture2D(clouds, clamp(uv, 0.0, 1.0)).rgb;
+        vec3 sky = mix(ink, matte * vec3(0.57, 0.62, 0.68), frame);
+
+        vec2 moon = vec2((azimuth - 0.39) * 0.989, altitude - 0.145);
+        float radius = length(moon);
+        float veil = smoothstep(0.020, 0.11, matte.b);
+        sky += vec3(0.10, 0.155, 0.20) * exp(-radius * 23.0) * (0.24 + veil * 0.76);
+        if (radius < 0.018) {
+          vec2 crater = moon / 0.016;
+          float surface = noise(crater * 3.2 + 2.8) * 0.65 + noise(crater * 11.0 + 0.8) * 0.35;
+          float disk = 1.0 - smoothstep(0.0155, 0.017, radius);
+          sky = mix(sky, vec3(0.66, 0.74, 0.78) * (0.51 + surface * 0.45), disk * (0.66 + 0.34 * veil));
+        }
+
+        float farRidge = -0.032 + noise(vec2(azimuth * 5.8, 5.2)) * 0.047 + noise(vec2(azimuth * 31.0, 1.6)) * 0.011;
+        float nearRidge = -0.054 + noise(vec2(azimuth * 7.2, 9.1)) * 0.041 + noise(vec2(azimuth * 48.0, 4.8)) * 0.013;
+        sky = mix(sky, vec3(0.026, 0.039, 0.055), 1.0 - smoothstep(farRidge, farRidge + 0.005, altitude));
+        sky = mix(sky, vec3(0.019, 0.031, 0.043), 1.0 - smoothstep(nearRidge, nearRidge + 0.003, altitude));
+        gl_FragColor = vec4(sky, 1.0);
         #include <colorspace_fragment>
       }
     `,
@@ -472,69 +538,24 @@ function buildSky(scene: THREE.Scene) {
   scene.add(sky);
 }
 
-function buildLowMist(scene: THREE.Scene) {
-  const time = { value: 0 };
-  const geometry = new THREE.PlaneGeometry(136, 112).rotateX(-Math.PI / 2);
-  for (const [index, height] of [1.25, 2.62, 4.1, 6.4].entries()) {
-    const sheet = new THREE.Mesh(geometry, new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      uniforms: { time, layer: { value: index } },
-      vertexShader: `
-        varying vec2 fogUV;
-        void main() {
-          fogUV = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 fogUV;
-        uniform float time;
-        uniform float layer;
-
-        float hash(vec2 p) {
-          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-        }
-
-        float noise(vec2 p) {
-          vec2 cell = floor(p);
-          vec2 f = fract(p);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(
-            mix(hash(cell), hash(cell + vec2(1.0, 0.0)), f.x),
-            mix(hash(cell + vec2(0.0, 1.0)), hash(cell + vec2(1.0, 1.0)), f.x),
-            f.y
-          );
-        }
-
-        void main() {
-          vec2 p = fogUV * vec2(6.5, 12.0) + vec2(time * (0.047 + layer * 0.018), -time * 0.022 + layer * 4.3);
-          float density = smoothstep(0.45, 1.0, noise(p) + 0.27 * noise(p * 2.31));
-          vec2 edge = smoothstep(vec2(0.0), vec2(0.22), fogUV)
-            * smoothstep(vec2(0.0), vec2(0.22), 1.0 - fogUV);
-          gl_FragColor = vec4(0.34, 0.43, 0.53, density * edge.x * edge.y * (0.16 - layer * 0.023));
-        }
-      `,
-    }));
-    sheet.position.set(index * 6 - 8, height, -69 - index * 11);
-    scene.add(sheet);
-  }
-  return time;
-}
-
 export function buildLookout(scene: THREE.Scene) {
-  scene.fog = new THREE.FogExp2('#253949', 0.0071);
-  buildSky(scene);
-  const mistTime = buildLowMist(scene);
+  scene.fog = new THREE.FogExp2('#304450', 0.0066);
+  const mistTime = { value: 0 };
+  buildSky(scene, mistTime);
   const terrain = buildTerrain(scene);
   const { trunks, trees } = buildForest(scene);
   const cliff = buildCliff(scene);
   const { blockers, sill, glow, room } = buildRoom(scene);
+  scene.traverse(object => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    materials.forEach(material => applyValleyFog(material, mistTime));
+  });
   scene.updateMatrixWorld(true);
 
-  scene.add(new THREE.HemisphereLight('#adc6de', '#3b4044', 0.90));
-  const moon = new THREE.DirectionalLight('#b9d5f4', 1.9);
-  moon.position.set(23, floorY + 15, -43);
+  scene.add(new THREE.HemisphereLight('#aec5da', '#464740', 0.86));
+  const moon = new THREE.DirectionalLight('#c0d6ee', 1.58);
+  moon.position.set(19, floorY + 7.8, -44);
   moon.target.position.set(0, floorY + 0.8, 2.2);
   moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
@@ -544,7 +565,7 @@ export function buildLookout(scene: THREE.Scene) {
   moon.shadow.camera.far = 65;
   moon.shadow.bias = -0.0001;
   moon.shadow.normalBias = 0.055;
-  moon.shadow.radius = 0.85;
+  moon.shadow.radius = 1.6;
   moon.shadow.autoUpdate = false;
   moon.shadow.needsUpdate = true;
   scene.add(moon, moon.target);

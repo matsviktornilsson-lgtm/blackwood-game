@@ -3,7 +3,7 @@ import slateUrl from './assets/lookout/slate.webp';
 import floorUrl from './assets/lookout/floor.webp';
 import timberUrl from './assets/lookout/timber.webp';
 import groundUrl from './assets/lookout/ground.webp';
-import horizonUrl from './assets/lookout/horizon.webp';
+import cloudDeckUrl from './assets/lookout/cloud-deck.webp';
 import spruceAUrl from './assets/lookout/spruce-a.webp';
 import spruceBUrl from './assets/lookout/spruce-b.webp';
 import spruceCUrl from './assets/lookout/spruce-c.webp';
@@ -22,8 +22,8 @@ const slate = materialTexture(slateUrl);
 const floor = materialTexture(floorUrl);
 const timber = materialTexture(timberUrl);
 export const groundTexture = materialTexture(groundUrl);
-export const horizonTexture = loader.load(horizonUrl);
-horizonTexture.colorSpace = THREE.SRGBColorSpace;
+export const cloudDeckTexture = loader.load(cloudDeckUrl);
+cloudDeckTexture.colorSpace = THREE.SRGBColorSpace;
 
 export const spruceSprites = ([[spruceAUrl, 0.56], [spruceBUrl, 0.59], [spruceCUrl, 0.47]] as const).map(([url, width]) => {
   const map = loader.load(url);
@@ -43,7 +43,7 @@ export function weatheredWood(color = '#c7ae92') {
 export function slateSurface(options: { tint?: string; floor?: boolean; wall?: boolean } = {}) {
   const material = new THREE.MeshStandardMaterial({
     color: options.tint ?? '#c1c6cb',
-    roughness: options.floor ? 0.63 : 0.84,
+    roughness: options.floor ? 0.77 : 0.9,
     vertexColors: !!options.wall,
     side: options.wall ? THREE.DoubleSide : THREE.FrontSide,
   });
@@ -77,6 +77,12 @@ export function slateSurface(options: { tint?: string; floor?: boolean; wall?: b
           texture2D(slateMap, slateUv.xy).rgb * slateAxis.z;
         diffuseColor.rgb *= slateColor;
       `)
+      .replace('#include <roughnessmap_fragment>', `
+        #include <roughnessmap_fragment>
+        float damp = smoothstep(0.12, 0.63,
+          sin(slatePoint.x * 2.7 + slatePoint.y * 0.7) * sin(slatePoint.z * 1.3 - slatePoint.y * 2.5));
+        roughnessFactor = clamp(roughnessFactor - damp * 0.19, 0.52, 1.0);
+      `)
       .replace('#include <normal_fragment_maps>', `
         #include <normal_fragment_maps>
         float relief = dot(slateColor, vec3(0.21, 0.72, 0.07));
@@ -87,7 +93,7 @@ export function slateSurface(options: { tint?: string; floor?: boolean; wall?: b
         float determinant = dot(surfaceDx, reliefX) * faceDirection;
         float fadeDetail = 1.0 - smoothstep(12.0, 30.0, length(vViewPosition));
         vec3 gradient = sign(determinant) * (dFdx(relief) * reliefX + dFdy(relief) * reliefY);
-        normal = normalize(max(abs(determinant), 0.0000001) * normal - 0.016 * fadeDetail * gradient);
+        normal = normalize(max(abs(determinant), 0.0000001) * normal - 0.008 * fadeDetail * gradient);
       `);
   };
   return material;

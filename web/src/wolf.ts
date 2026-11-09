@@ -776,6 +776,8 @@ export function animateWolf(
   const stare = smoothstep(reveal, 0.16, 0.84);
   const breath = Math.sin(time * (peeking ? 2.85 : 2.1)) * (peeking ? 0.008 : 0.015);
   const leap = lunging ? smoothstep(time, 0.09, 0.49) * (1 - smoothstep(time, 0.72, 1)) : 0;
+  const lead = root.position.x <= 0 ? -1 : 1;
+  const drive = lunging ? smoothstep(time, 0.05, 0.37) * (1 - smoothstep(time, 0.64, 1)) : 0;
   const snarl = Math.max(stare * 0.69 + inhale * 0.13, leap);
   const landing = lunging ? smoothstep(time, 0.70, 1) : 0;
   const windup = striking ? smoothstep(time, 0.06, strikeMoment - 0.04) : 0;
@@ -786,25 +788,25 @@ export function animateWolf(
   const sniff = stalking ? Math.sin(time * 0.63) + 0.21 * Math.sin(time * 2.23) : 0;
 
   chest.position.set(
-    sway * 0.063 + (grounded ? hipShift * 0.77 : 0) + sniff * 0.027 - impact * 0.076,
+    sway * 0.063 + (grounded ? hipShift * 0.77 : 0) + sniff * 0.027 - impact * 0.076 + lead * drive * 0.065,
     1.13 + breath + inhale * 0.020 - lowPeek * 0.26 + (grounded ? hipHeight - 1.106 - bounce * 0.32 : 0) - landing * 0.17 - impact * 0.12,
     0.232 - pace * 0.12 - leap * 0.21 - impact * 0.23 - fromLip * 0.12,
   );
   chest.rotation.set(
     (onRock ? lerp(0.38, 0.18, atLip) : lerp(0.024, 0.18, fromLip)) - exertion * 0.045 - pace * 0.22 + bounce * 0.66 - leap * 0.29 - impact * 0.24,
-    sway * 0.15 - pelvis.rotation.y * 0.55 + reachAmount * (0.33 - 0.59 * swing),
-    sway * -0.11 + pelvis.rotation.z * 0.48 + reachAmount * (0.10 - 0.28 * swing) + leap * 0.052,
+    sway * 0.15 - pelvis.rotation.y * 0.55 + reachAmount * (0.33 - 0.59 * swing) + lead * drive * 0.18,
+    sway * -0.11 + pelvis.rotation.z * 0.48 + reachAmount * (0.10 - 0.28 * swing) - lead * drive * 0.10,
   );
   head.position.y = 0.575 + lowPeek * 0.25 - (grounded ? bounce * 0.48 : 0) + inhale * 0.012;
   head.position.z = -0.844 - leap * 0.051 - stare * 0.019;
   head.rotation.set(
     peeking ? 0.08 + breath + inhale * 0.034 - stare * 0.030 : climbing ? 0.13 - atLip * 0.03 : -0.018 + pace * 0.17 - bounce * 0.59 + leap * 0.29 + impact * 0.16 + landing * 0.21,
-    sniff * 0.23 - chest.rotation.y * 0.67 + inhale * 0.045 - leap * 0.059,
+    sniff * 0.23 - chest.rotation.y * 0.67 + inhale * 0.045 - lead * leap * 0.024,
     -chest.rotation.z * 0.64 + sniff * 0.046 - stare * 0.027,
   );
-  const bite = lunging ? smoothstep(time, 0.13, 0.42) * (1 - smoothstep(time, 0.64, 0.90)) : 0;
+  const bite = lunging ? smoothstep(time, 0.31, 0.68) * (1 - smoothstep(time, 0.78, 1)) : 0;
   jaw.rotation.x = -(0.014 + Math.max(0, breath) * 1.6 + stare * 0.115 + inhale * 0.022 + pace * 0.11
-    + bite * 0.52 + landing * 0.09 + reachAmount * 0.31);
+    + drive * 0.10 + bite * 0.47 + landing * 0.09 + reachAmount * 0.31);
   const blinkPhase = time % 4.91;
   const blink = (1 - stare) * smoothstep(blinkPhase, 2.4, 2.46) * (1 - smoothstep(blinkPhase, 2.46, 2.55));
   eyes.forEach(eye => { eye.scale.y = Math.max(0.08, 1 - blink - snarl * 0.21); });
@@ -827,15 +829,17 @@ export function animateWolf(
     const side = index === 0 ? -1 : 1;
     if (onRock) return;
     if (lunging) {
-      const release = smoothstep(time, index ? 0.09 : 0.03, index ? 0.32 : 0.25);
+      const reaching = side === lead;
+      const release = reaching ? smoothstep(time, 0.025, 0.25) : smoothstep(time, 0.13, 0.40);
       target.set(
-        side * (0.32 + leap * (index ? 0.14 : 0.03) - landing * 0.13),
-        -0.69 + leap * (index ? 0.42 : 0.61) - landing * 0.17,
-        -0.56 - leap * (index ? 0.32 : 0.45) + landing * (index ? 0.15 : -0.20),
+        side * (0.19 + drive * (reaching ? -0.20 : 0.12)),
+        -0.74 + drive * (reaching ? 0.57 : 0.22) - landing * 0.11,
+        -0.39 - drive * (reaching ? 0.62 : 0.13) - landing * (reaching ? 0.08 : 0.21),
       );
       if (climb) target.lerp(limb.frame.worldToLocal(handhold.copy(climb.holds.lip[index])), 1 - release);
-      reach(limb, target, pole.set(side * 0.68, -0.55, 0.33));
-      limb.end.rotateX(lerp(1.05, leap * 0.85 + landing * 0.36, release));
+      reach(limb, target, pole.set(side * 0.31, -0.77, 0.44));
+      limb.end.rotateX(lerp(1.05, drive * (reaching ? 0.58 : 0.34) + landing * 0.41, release));
+      limb.end.rotateY(-side * release * (reaching ? 0.23 : 0.12));
       return;
     }
     if (striking) {
@@ -862,10 +866,11 @@ export function animateWolf(
   legs.forEach((limb, index) => {
     const side = index === 0 ? -1 : 1;
     if (planted || onRock) return;
+    const driving = side !== lead;
     limb.toes.rotation.x = -leap * 0.30;
-    reach(limb, target.set(side * 0.04, -0.79 + leap * (index ? 0.28 : 0.39) - landing * 0.035,
-      0.14 + fromLip * 0.18 + leap * (index ? 0.19 : -0.23) - landing * (index ? 0.12 : 0.27)),
-      pole.set(side * 0.24, 0.04, -1));
+    reach(limb, target.set(side * 0.03, -0.84 + drive * (driving ? 0.17 : 0.31) - landing * 0.035,
+      0.15 + fromLip * 0.18 + drive * (driving ? 0.33 : -0.13) - landing * (driving ? 0.15 : 0.27)),
+      pole.set(side * 0.13, 0.04, -1));
     limb.end.rotateX(lerp(0.66, 0.09, landing) + leap * 0.11);
   });
 

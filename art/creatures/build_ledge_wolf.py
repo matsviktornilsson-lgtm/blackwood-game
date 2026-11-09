@@ -4,9 +4,13 @@ from array import array
 from math import atan2, cos, sin, tau
 from pathlib import Path
 from random import Random
+import sys
 
 import bpy
 from mathutils import Vector, noise
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ledge_skeleton import create_ledge_skeleton
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -82,37 +86,24 @@ eye = material("Recessed amber eye", (.25, .108, .028), .30, True)
 eyelid = material("Dark eyelid rim", (.029, .020, .015), .73, True)
 eye_x, eye_forward, eye_height = .114, .853, 1.725
 
-rig_data = bpy.data.armatures.new("Ledge skeleton")
-rig = bpy.data.objects.new("Ledge wolf rig", rig_data)
-bpy.context.collection.objects.link(rig)
-bpy.context.view_layer.objects.active = rig
-rig.select_set(True)
-bpy.ops.object.mode_set(mode="EDIT")
-
-
-def bone(name, location, parent=None):
-    edit = rig_data.edit_bones.new(name)
-    edit.head = xyz(location)
-    edit.tail = edit.head + Vector((0, 0, .13))
-    if parent:
-        edit.parent = rig_data.edit_bones[parent]
-    return name
-
-
-bone("Chest", (0, 1.13, .232))
-bone("Pelvis", (0, 1.106, .419))
-bone("Head", (0, 1.705, -.612), "Chest")
-bone("Jaw", (0, 1.622, -.565), "Head")
-bone("Tail", (0, 1.09, .706), "Pelvis")
+rest = {
+    "Chest": (0, 1.13, .232),
+    "Pelvis": (0, 1.106, .419),
+    "Head": (0, 1.705, -.612),
+    "Jaw": (0, 1.622, -.565),
+    "Tail": (0, 1.09, .706),
+}
 for side, suffix in ((-1, "L"), (1, "R")):
-    bone("Shoulder." + suffix, (side * .342, 1.637, -.177), "Chest")
-    bone("Elbow." + suffix, (side * .486, 1.178, -.129), "Shoulder." + suffix)
-    bone("Wrist." + suffix, (side * .486, .537, -.376), "Elbow." + suffix)
-    bone("Hip." + suffix, (side * .229, 1.106, .419), "Pelvis")
-    bone("Knee." + suffix, (side * .349, .706, .201), "Hip." + suffix)
-    bone("Hock." + suffix, (side * .384, .327, .584), "Knee." + suffix)
-    bone("Toes." + suffix, (side * .349, .062, .350), "Hock." + suffix)
-bpy.ops.object.mode_set(mode="OBJECT")
+    rest.update({
+        "Shoulder." + suffix: (side * .342, 1.637, -.177),
+        "Elbow." + suffix: (side * .486, 1.178, -.129),
+        "Wrist." + suffix: (side * .486, .537, -.376),
+        "Hip." + suffix: (side * .229, 1.106, .419),
+        "Knee." + suffix: (side * .349, .706, .201),
+        "Hock." + suffix: (side * .384, .327, .584),
+        "Toes." + suffix: (side * .349, .062, .350),
+    })
+rig = create_ledge_skeleton({name: xyz(point) for name, point in rest.items()})
 
 
 def mesh(name, vertices, faces, mat):

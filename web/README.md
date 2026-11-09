@@ -15,6 +15,18 @@ npm run dev
 
 `npm run build` type-checks the game and builds the static site in `dist/`.
 
+## Generated werewolf rig preview
+
+The Phase 1 source in the local `3d/` folder is `2026-11-09_2685697290443443_batch5_game.glb`. It came from a Flux concept passed through [TRELLIS.2](https://github.com/microsoft/TRELLIS.2), which releases its model and code under the MIT license.
+
+From the repository root, run this with Blender 4.2 or later:
+
+```sh
+blender --background --python-exit-code 1 --python art/creatures/rig_generated_wolf.py -- 3d/2026-11-09_2685697290443443_batch5_game.glb build/batch5-rigged.glb
+```
+
+The script writes the skinned GLB and a sibling `batch5-rigged-diagnostics/` folder with the joint and weight report and images of both poses. The landmark guides were traced on Batch 5. Review them before running the script on a different sculpt. The export stays separate from the game asset while the rig is under review.
+
 ## Audio credits
 
 - Rifle shot and bolt action excerpts from [308_rifle_02.wav by gezortenplotz](https://freesound.org/people/gezortenplotz/sounds/43756/) under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The excerpts were trimmed and mixed for Blackwood. The bolt excerpts were retimed to match the reload.

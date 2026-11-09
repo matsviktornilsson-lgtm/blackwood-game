@@ -29,6 +29,16 @@ The script writes the skinned GLB and a sibling `batch5-rigged-diagnostics/` fol
 
 Add `--fit-puppet` to export the fitted version. This reshapes the skin to the existing climb and attack joints and keeps the generated jaw hinge in the skull. Use `/?preview=ledge-wolf&wolf=v2` to see the fitted model, or `/?preview=ledge-wolf&wolf=v1` for the original. The game selects v2 by default and falls back to v1 if the v2 asset fails to load. The optional `LEDGE_MODEL_EVERYWHERE` constant in `src/wolf-ledge-model.ts` enables the generated skin on the forest approach for performance testing.
 
+To rebuild the shipped asset, save the fitted Blender export as `build/batch5-fitted.glb`, then run these commands from the repository root:
+
+```sh
+npx --yes @gltf-transform/cli@4.5.1 webp build/batch5-fitted.glb build/batch5-color.glb --slots baseColorTexture --quality 93
+npx --yes @gltf-transform/cli@4.5.1 webp build/batch5-color.glb build/batch5-webp.glb --slots metallicRoughnessTexture --lossless true
+npx --yes @gltf-transform/cli@4.5.1 draco build/batch5-webp.glb web/src/assets/werewolf/ledge-wolf-v2.glb --quantize-position 15 --quantize-normal 12 --quantize-texcoord 14
+```
+
+WebP keeps the metallic and roughness map lossless and works with the existing loader. Draco compresses the geometry. The shipped v2 asset is about 4.70 MB.
+
 ## Audio credits
 
 - Rifle shot and bolt action excerpts from [308_rifle_02.wav by gezortenplotz](https://freesound.org/people/gezortenplotz/sounds/43756/) under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The excerpts were trimmed and mixed for Blackwood. The bolt excerpts were retimed to match the reload.

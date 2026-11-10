@@ -20,8 +20,7 @@ const closeupLights = THREE.ShaderChunk.lights_fragment_begin.replace(
   'getPointLightInfo( pointLight, geometryPosition, directLight );',
   'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= 0.48;',
 );
-async function loadLedgeModel(version: WolfVersion) {
-  const { scene } = await gltf.loadAsync(wolfUrls[version]);
+function tuneLegacyMaterials(scene: THREE.Group) {
   const loader = new THREE.TextureLoader();
   const coatGrain = loader.load(coatGrainUrl);
   const leatherGrain = loader.load(leatherGrainUrl);
@@ -55,6 +54,12 @@ async function loadLedgeModel(version: WolfVersion) {
           'outgoingLight += diffuseColor.rgb * vec3(0.115, 0.121, 0.132);\n#include <opaque_fragment>');
     };
   });
+}
+
+async function loadLedgeModel(version: WolfVersion) {
+  const { scene } = await gltf.loadAsync(wolfUrls[version]);
+  // Keep the approved projected color under the same PBR lighting as the model lab.
+  if (version !== 'v3') tuneLegacyMaterials(scene);
   template = { scene, version };
   return true;
 }

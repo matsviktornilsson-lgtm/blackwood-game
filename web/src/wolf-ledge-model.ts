@@ -66,8 +66,8 @@ async function loadLedgeModel(version: WolfVersion) {
 
 async function loadRequestedLedgeModel() {
   const requested = new URLSearchParams(window.location.search).get('wolf');
-  const versions: WolfVersion[] = requested === 'v3' ? ['v3', 'v2', 'v1']
-    : requested === 'v1' ? ['v1'] : ['v2', 'v1'];
+  const versions: WolfVersion[] = requested === 'v1' ? ['v1']
+    : requested === 'v2' ? ['v2', 'v1'] : ['v3', 'v2', 'v1'];
   for (const version of versions) {
     try {
       return await loadLedgeModel(version);

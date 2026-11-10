@@ -108,9 +108,9 @@ The reference was made with the built-in ImageGen tool:
 
 The local source `3d/2026-11-09_2685697290443443_batch5_game.glb` was generated from a Flux concept with [TRELLIS.2](https://github.com/microsoft/TRELLIS.2), whose model and code are MIT licensed. [The Phase 1 Blender command](../web/README.md#generated-werewolf-rig-preview) preserves the original UVs and PBR maps and writes a separate rigged preview. The source has a small opening through the side of the muzzle and a fused front lip, which limits jaw deformation.
 
-The game uses the fitted export as `ledge-wolf-v2.glb`. It retains Batch 5’s materials and uses the existing puppet’s joints for the close-up poses, with the generated jaw hinge kept relative to the skull.
+The fitted export `ledge-wolf-v2.glb` retains Batch 5’s materials and uses the existing puppet’s joints for the close-up poses, with the generated jaw hinge kept relative to the skull.
 
-The opt-in `ledge-wolf-v3.glb` uses the same Batch 5 GAME geometry (Flux seed `2685697290443443`, TRELLIS.2 under MIT) with the concept cutout projected onto the front. The approved diagnostic source retains base color and metallic roughness. See the [v3 rig report](creatures/batch5-v3-rig-report.md) for the handoff and pose checks.
+The game defaults to `ledge-wolf-v3.glb`, which uses the same Batch 5 GAME geometry (Flux seed `2685697290443443`, TRELLIS.2 under MIT) with the concept cutout projected onto the front. The approved diagnostic source retains base color and metallic roughness. See the [v3 rig report](creatures/batch5-v3-rig-report.md) for the handoff and pose checks.
 
 ### Werewolf material atlas prompt
 

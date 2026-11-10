@@ -29,6 +29,8 @@ The script writes the skinned GLB and a sibling `batch5-rigged-diagnostics/` fol
 
 Add `--fit-puppet` to export the fitted version. This reshapes the skin to the existing climb and attack joints and keeps the generated jaw hinge in the skull. Use `/?preview=ledge-wolf&wolf=v2` to see the fitted model, or `/?preview=ledge-wolf&wolf=v1` for the original. The game selects v2 by default and falls back to v1 if the v2 asset fails to load. The optional `LEDGE_MODEL_EVERYWHERE` constant in `src/wolf-ledge-model.ts` enables the generated skin on the forest approach for performance testing.
 
+Use `/?preview=ledge-wolf&wolf=v3` to review the approved front-projection candidate during the ledge attack. If v3 fails to load, the game tries v2 and then v1. The [v3 rig report](../art/creatures/batch5-v3-rig-report.md) records the source and diagnostic poses.
+
 To rebuild the shipped asset, save the fitted Blender export as `build/batch5-fitted.glb`, then run these commands from the repository root:
 
 ```sh

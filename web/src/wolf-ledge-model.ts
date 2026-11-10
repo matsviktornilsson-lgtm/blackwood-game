@@ -6,11 +6,13 @@ import type { createWolf } from './wolf';
 import { applyValleyFog } from './valley-fog';
 import wolfV1 from './assets/werewolf/ledge-wolf.glb?url';
 import wolfV2 from './assets/werewolf/ledge-wolf-v2.glb?url';
+import wolfV3 from './assets/werewolf/ledge-wolf-v3.glb?url';
 import coatGrainUrl from './assets/werewolf/short-hair.webp';
 import leatherGrainUrl from './assets/werewolf/hide.webp';
 
 const LEDGE_MODEL_EVERYWHERE = false;
-type WolfVersion = 'v1' | 'v2';
+const wolfUrls = { v1: wolfV1, v2: wolfV2, v3: wolfV3 };
+type WolfVersion = keyof typeof wolfUrls;
 let template: { scene: THREE.Group; version: WolfVersion } | undefined;
 const draco = new DRACOLoader().setDecoderPath(DRACO_GLTF_CONFIG).setWorkerLimit(2);
 const gltf = new GLTFLoader().setDRACOLoader(draco);
@@ -19,7 +21,7 @@ const closeupLights = THREE.ShaderChunk.lights_fragment_begin.replace(
   'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= 0.48;',
 );
 async function loadLedgeModel(version: WolfVersion) {
-  const { scene } = await gltf.loadAsync(version === 'v2' ? wolfV2 : wolfV1);
+  const { scene } = await gltf.loadAsync(wolfUrls[version]);
   const loader = new THREE.TextureLoader();
   const coatGrain = loader.load(coatGrainUrl);
   const leatherGrain = loader.load(leatherGrainUrl);
@@ -57,15 +59,21 @@ async function loadLedgeModel(version: WolfVersion) {
   return true;
 }
 
-const requested = new URLSearchParams(window.location.search).get('wolf') === 'v1' ? 'v1' : 'v2';
-export const ledgeModelReady = loadLedgeModel(requested).catch(error => {
-  if (requested === 'v1') throw error;
-  console.warn('Could not load the generated ledge werewolf. Using v1.', error);
-  return loadLedgeModel('v1');
-}).catch(error => {
-  console.warn('Could not load the ledge werewolf.', error);
+async function loadRequestedLedgeModel() {
+  const requested = new URLSearchParams(window.location.search).get('wolf');
+  const versions: WolfVersion[] = requested === 'v3' ? ['v3', 'v2', 'v1']
+    : requested === 'v1' ? ['v1'] : ['v2', 'v1'];
+  for (const version of versions) {
+    try {
+      return await loadLedgeModel(version);
+    } catch (error) {
+      console.warn(`Could not load the ledge werewolf (${version}).`, error);
+    }
+  }
   return false;
-}).finally(() => draco.dispose());
+}
+
+export const ledgeModelReady = loadRequestedLedgeModel().finally(() => draco.dispose());
 
 type Wolf = ReturnType<typeof createWolf>;
 

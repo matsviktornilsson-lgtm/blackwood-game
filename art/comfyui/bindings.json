@@ -1,0 +1,354 @@
+{
+  "concept": {
+    "preset": [
+      [
+        "6",
+        "batch_size",
+        8
+      ],
+      [
+        "6",
+        "width",
+        1024
+      ],
+      [
+        "6",
+        "height",
+        1536
+      ],
+      [
+        "1",
+        "unet_name",
+        "flux1-dev.safetensors"
+      ],
+      [
+        "1",
+        "weight_dtype",
+        "fp8_e4m3fn"
+      ],
+      [
+        "2",
+        "clip_name2",
+        "t5xxl_fp8_e4m3fn.safetensors"
+      ],
+      [
+        "10",
+        "lora_name",
+        "flux-realism-lora.safetensors"
+      ],
+      [
+        "10",
+        "strength_model",
+        1.0
+      ],
+      [
+        "10",
+        "strength_clip",
+        0.0
+      ],
+      [
+        "11",
+        "guidance",
+        3.5
+      ],
+      [
+        "7",
+        "steps",
+        28
+      ],
+      [
+        "7",
+        "cfg",
+        1.0
+      ],
+      [
+        "7",
+        "sampler_name",
+        "euler"
+      ],
+      [
+        "7",
+        "scheduler",
+        "simple"
+      ]
+    ],
+    "seed": [
+      "7",
+      "seed"
+    ],
+    "body": [
+      "4",
+      "t5xxl"
+    ],
+    "body_token": "[BODY]",
+    "prefix": [
+      "9",
+      "filename_prefix"
+    ],
+    "output": [
+      "9",
+      "images"
+    ],
+    "workflow_sha256": "62f2b744f99aa3197fadcf9743e72975c4d323031e80b077eff72d1ee34bdc55"
+  },
+  "3d": {
+    "preset": [
+      [
+        "13",
+        "batch_size",
+        1
+      ],
+      [
+        "18",
+        "resolution",
+        "32"
+      ],
+      [
+        "27",
+        "segmenter",
+        "pec"
+      ]
+    ],
+    "image": [
+      "1",
+      "image"
+    ],
+    "prefix": [
+      "30",
+      "filename_prefix"
+    ],
+    "output": [
+      "30",
+      "3d"
+    ],
+    "cutout": {
+      "prefix": [
+        "7",
+        "filename_prefix"
+      ],
+      "output": [
+        "7",
+        "images"
+      ]
+    },
+    "workflow_sha256": "c9f76da6df9affb58c60088b140e7b596e10353fa7b0261276d0f3a6dd9e76f8"
+  },
+  "3d-1024": {
+    "preset": [
+      [
+        "13",
+        "batch_size",
+        1
+      ],
+      [
+        "18",
+        "resolution",
+        "32"
+      ],
+      [
+        "23",
+        "target_resolution",
+        1024
+      ],
+      [
+        "29",
+        "segmenter",
+        "pec"
+      ]
+    ],
+    "image": [
+      "1",
+      "image"
+    ],
+    "prefix": [
+      "32",
+      "filename_prefix"
+    ],
+    "output": [
+      "32",
+      "3d"
+    ],
+    "cutout": {
+      "prefix": [
+        "7",
+        "filename_prefix"
+      ],
+      "output": [
+        "7",
+        "images"
+      ]
+    },
+    "workflow_sha256": "85e430f965e24c304ba1ac8f256fb5eb15ed6dd84a48c5cb3ecc827fe161bac4"
+  },
+  "concept-schnell": {
+    "preset": [
+      [
+        "6",
+        "batch_size",
+        8
+      ],
+      [
+        "6",
+        "width",
+        1024
+      ],
+      [
+        "6",
+        "height",
+        1536
+      ],
+      [
+        "1",
+        "unet_name",
+        "flux1-schnell.safetensors"
+      ]
+    ],
+    "seed": [
+      "7",
+      "seed"
+    ],
+    "body": [
+      "4",
+      "t5xxl"
+    ],
+    "body_token": "[BODY]",
+    "prefix": [
+      "9",
+      "filename_prefix"
+    ],
+    "output": [
+      "9",
+      "images"
+    ],
+    "workflow_sha256": "e9b556655de03bc8f6cc795b01f2d2e2ea899babb99f82e3dd3c694b47c696d8"
+  },
+  "concept-photo": {
+    "preset": [
+      [
+        "6",
+        "batch_size",
+        8
+      ],
+      [
+        "6",
+        "width",
+        1024
+      ],
+      [
+        "6",
+        "height",
+        1536
+      ],
+      [
+        "1",
+        "unet_name",
+        "flux1-dev.safetensors"
+      ],
+      [
+        "1",
+        "weight_dtype",
+        "fp8_e4m3fn"
+      ],
+      [
+        "2",
+        "clip_name2",
+        "t5xxl_fp8_e4m3fn.safetensors"
+      ],
+      [
+        "10",
+        "lora_name",
+        "flux-realism-lora.safetensors"
+      ],
+      [
+        "10",
+        "strength_model",
+        1.0
+      ],
+      [
+        "10",
+        "strength_clip",
+        0.0
+      ],
+      [
+        "11",
+        "guidance",
+        3.5
+      ],
+      [
+        "7",
+        "steps",
+        28
+      ],
+      [
+        "7",
+        "cfg",
+        1.0
+      ],
+      [
+        "7",
+        "sampler_name",
+        "euler"
+      ],
+      [
+        "7",
+        "scheduler",
+        "simple"
+      ]
+    ],
+    "seed": [
+      "7",
+      "seed"
+    ],
+    "prefix": [
+      "9",
+      "filename_prefix"
+    ],
+    "output": [
+      "9",
+      "images"
+    ],
+    "workflow_sha256": "caa25acd05974a6f1563fa7d2d03da7924cce4e43fc1cda96bd9a35a94f36f1d"
+  },
+  "3d-bf16": {
+    "preset": [
+      [
+        "13",
+        "batch_size",
+        1
+      ],
+      [
+        "18",
+        "resolution",
+        "32"
+      ],
+      [
+        "27",
+        "segmenter",
+        "pec"
+      ]
+    ],
+    "image": [
+      "1",
+      "image"
+    ],
+    "prefix": [
+      "30",
+      "filename_prefix"
+    ],
+    "output": [
+      "30",
+      "3d"
+    ],
+    "cutout": {
+      "prefix": [
+        "7",
+        "filename_prefix"
+      ],
+      "output": [
+        "7",
+        "images"
+      ]
+    },
+    "workflow_sha256": "81754d2b55d151aff4bd0236572a8bb5f48154b04e27036f5a46bbe9a109d4c7"
+  }
+}

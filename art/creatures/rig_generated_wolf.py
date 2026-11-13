@@ -11,6 +11,10 @@ from mathutils import Matrix, Quaternion, Vector
 from mathutils.bvhtree import BVHTree
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from blender_model import configure_cycles, preview_lighting
+from gpu_runtime import CPU_ONLY
+from send_to_game import write_json
 from ledge_skeleton import PARENTS, create_ledge_skeleton, puppet_rest
 
 
@@ -321,17 +325,6 @@ def fit_skin_to_puppet(skin, source):
 
 def render_diagnostics(skin, rig, output):
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_WORKBENCH"
-    shading = scene.display.shading
-    shading.color_type = "TEXTURE"
-    shading.light = "STUDIO"
-    shading.show_cavity = True
-    shading.cavity_type = "BOTH"
-    for mat in skin.data.materials:
-        if mat and mat.use_nodes:
-            shader = next((node for node in mat.node_tree.nodes if node.type == "BSDF_PRINCIPLED"), None)
-            if shader and shader.inputs["Base Color"].is_linked:
-                mat.node_tree.nodes.active = shader.inputs["Base Color"].links[0].from_node
     scene.render.resolution_x = 720
     scene.render.resolution_y = 840
     scene.render.resolution_percentage = 100
@@ -341,6 +334,7 @@ def render_diagnostics(skin, rig, output):
     cam.data.type = "ORTHO"
     full_scale = max(skin.dimensions.z * 1.19, skin.dimensions.y * 1.4)
     center = Vector((0, 0, (min(v.co.z for v in skin.data.vertices) + max(v.co.z for v in skin.data.vertices)) * .5))
+    preview_lighting(scene, center, full_scale / 2.2)
     mouth = rig.data.bones["Jaw"].head_local + Vector((0, .05, .02)) * (skin.dimensions.z / 2.2)
     for pose in ("rest", "test"):
         if pose == "test":
@@ -372,6 +366,7 @@ def main():
     diagnostics = target.with_name(target.stem + "-diagnostics")
     diagnostics.mkdir(exist_ok=True)
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    device = configure_cycles()
     skin = import_skin(source)
     positions, original, unit, floor, has_opening = fit_landmarks(skin)
     skin.data.transform(TURN)
@@ -403,6 +398,11 @@ def main():
     ]
     render_diagnostics(skin, rig, diagnostics)
     (diagnostics / "report.txt").write_text("\n".join(report) + "\n", encoding="utf-8")
+    heights = [(skin.matrix_world @ vertex.co).z for vertex in skin.data.vertices]
+    write_json(diagnostics / "report.json", {
+        "device": device, "rig_device": CPU_ONLY, "preview_device": device,
+        "triangles": len(skin.data.loop_triangles), "height_m": max(heights) - min(heights),
+    })
     print("\n".join(report[3:]), flush=True)
 
 

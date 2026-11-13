@@ -16,3 +16,16 @@ dist/
 build/
 web/node_modules/
 web/dist/
+
+# Generated model candidates and hand-offs (large binaries)
+3d/
+
+# Machine-local native pipeline config and Python caches
+art/tools/blackwood.config.local.json
+__pycache__/
+
+# Local Model Lab frontend and development server config
+/web/model-lab.html
+/web/model-lab.test.mjs
+/web/src/model-lab.ts
+/web/vite.config.ts

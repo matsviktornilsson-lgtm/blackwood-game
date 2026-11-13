@@ -19,10 +19,10 @@ npm run dev
 
 The Phase 1 source in the local `3d/` folder is `2026-11-09_2685697290443443_batch5_game.glb`. It came from a Flux concept passed through [TRELLIS.2](https://github.com/microsoft/TRELLIS.2), which releases its model and code under the MIT license.
 
-From the repository root, run this with Blender 4.2 or later:
+Use the [native model pipeline](../docs/MODEL_PIPELINE.md) from the repository root. After approval in the Model Lab, run this in PowerShell 7 with a configured Windows Blender:
 
-```sh
-blender --background --python-exit-code 1 --python art/creatures/rig_generated_wolf.py -- 3d/2026-11-09_2685697290443443_batch5_game.glb build/batch5-rigged.glb
+```powershell
+./art/tools/blackwood.ps1 rig --source '3d/2026-11-09_2685697290443443_batch5_game.glb' --output 'build/batch5-rigged.glb' --approved
 ```
 
 The script writes the skinned GLB and a sibling `batch5-rigged-diagnostics/` folder with the joint and weight report and images of both poses. The landmark guides were traced on Batch 5. Review them before running the script on a different sculpt. The export stays separate from the game asset while the rig is under review.
@@ -31,12 +31,11 @@ Add `--fit-puppet` to export the fitted version. This reshapes the skin to the e
 
 The game defaults to the approved v3 model. Use `/?preview=ledge-wolf` to see it during the ledge attack. Add `&wolf=v2` or `&wolf=v1` to preview an earlier version. If v3 fails to load, the game tries v2 and then v1. The [v3 rig report](../art/creatures/batch5-v3-rig-report.md) records the source and diagnostic poses.
 
-To rebuild the shipped asset, save the fitted Blender export as `build/batch5-fitted.glb`, then run these commands from the repository root:
+To stage a new asset, use a fitted Blender export and choose the next free version. The native command uses the configured local glTF Transform CLI.
 
-```sh
-npx --yes @gltf-transform/cli@4.5.1 webp build/batch5-fitted.glb build/batch5-color.glb --slots baseColorTexture --quality 93
-npx --yes @gltf-transform/cli@4.5.1 webp build/batch5-color.glb build/batch5-webp.glb --slots metallicRoughnessTexture --lossless true
-npx --yes @gltf-transform/cli@4.5.1 draco build/batch5-webp.glb web/src/assets/werewolf/ledge-wolf-v2.glb --quantize-position 15 --quantize-normal 12 --quantize-texcoord 14
+```powershell
+./art/tools/blackwood.ps1 compress --source 'build/stalker-rigged.glb' --version 4 --approved
+./art/tools/blackwood.ps1 build
 ```
 
 WebP keeps the metallic and roughness map lossless and works with the existing loader. Draco compresses the geometry. The shipped v2 asset is about 4.70 MB.

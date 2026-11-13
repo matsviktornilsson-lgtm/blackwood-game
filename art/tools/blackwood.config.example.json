@@ -1,0 +1,39 @@
+{
+  "comfy_url": "http://127.0.0.1:8188",
+  "comfy_root": "E:\\AI-Native\\apps\\ComfyUI",
+  "comfy_launcher": "E:\\AI-Native\\Start-ComfyUI.ps1",
+  "comfy_python": "E:\\AI-Native\\apps\\ComfyUI\\venv\\Scripts\\python.exe",
+  "python": "E:\\AI-Native\\tools\\python\\cpython-3.12.16-windows-x86_64-none\\python.exe",
+  "trellis_worker_python": null,
+  "cumesh_site_packages": null,
+  "blender": null,
+  "node": null,
+  "gltf_transform": null,
+  "runs_root": "E:\\AI-Native\\workspaces\\blackwood\\runs",
+  "workflows": {
+    "concept": "art/comfyui/blackwood_werewolf_concept.api.json",
+    "concept-schnell": "art/comfyui/blackwood_werewolf_concept_schnell.api.json",
+    "3d": "art/comfyui/blackwood_werewolf_to_3d.api.json",
+    "3d-1024": "art/comfyui/blackwood_werewolf_to_3d_1024_lowvram.api.json",
+    "concept-photo": "art/comfyui/blackwood_werewolf_concept_photo.api.json",
+    "3d-bf16": "art/comfyui/blackwood_werewolf_to_3d_bf16.api.json"
+  },
+  "workflow_gui": [
+    "art/comfyui/blackwood_werewolf_concept.json",
+    "art/comfyui/blackwood_werewolf_concept_schnell.json",
+    "art/comfyui/blackwood_werewolf_to_3d.json",
+    "art/comfyui/blackwood_werewolf_to_3d_1024_lowvram.json",
+    "art/comfyui/blackwood_werewolf_concept_photo.json"
+  ],
+  "workflow_bindings": "art/comfyui/bindings.json",
+  "game_adapter": "art/tools/make_game_glb.py",
+  "projection_adapter": "art/tools/bake_scene.py",
+  "lab_port": 5173,
+  "versions": {
+    "comfyui": "0.42.1",
+    "frontend": "1.55.18",
+    "comfy_python": "3.12.16",
+    "torch": "2.11.0+cu130",
+    "python": "3.12.16"
+  }
+}

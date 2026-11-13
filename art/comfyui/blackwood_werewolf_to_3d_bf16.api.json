@@ -1,0 +1,392 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "example.png"
+    }
+  },
+  "2": {
+    "class_type": "LoadBackgroundRemovalModel",
+    "inputs": {
+      "bg_removal_name": "birefnet.safetensors"
+    }
+  },
+  "3": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "2",
+        0
+      ],
+      "image": [
+        "1",
+        0
+      ]
+    }
+  },
+  "4": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "images": [
+        "1",
+        0
+      ],
+      "masks": [
+        "3",
+        0
+      ],
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.0,
+      "grow_mask": 0,
+      "background": "#000000"
+    }
+  },
+  "5": {
+    "class_type": "InvertMask",
+    "inputs": {
+      "mask": [
+        "3",
+        0
+      ]
+    }
+  },
+  "6": {
+    "class_type": "JoinImageWithAlpha",
+    "inputs": {
+      "image": [
+        "1",
+        0
+      ],
+      "alpha": [
+        "5",
+        0
+      ]
+    }
+  },
+  "7": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "6",
+        0
+      ],
+      "filename_prefix": "blackwood/cutout"
+    }
+  },
+  "8": {
+    "class_type": "CLIPVisionLoader",
+    "inputs": {
+      "clip_name": "dino_v3_L_naf_fp32.safetensors"
+    }
+  },
+  "9": {
+    "class_type": "Trellis2Conditioning",
+    "inputs": {
+      "clip_vision_model": [
+        "8",
+        0
+      ],
+      "image": [
+        "4",
+        0
+      ]
+    }
+  },
+  "10": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "trellis_2_bf16.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "11": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "trellis_2_shape_vae_bf16.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "trellis_2_texture_vae_bf16.safetensors"
+    }
+  },
+  "13": {
+    "class_type": "EmptyTrellis2LatentStructure",
+    "inputs": {
+      "batch_size": 1
+    }
+  },
+  "14": {
+    "class_type": "CFGOverride",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "cfg": 1.0,
+      "start_percent": 0.667,
+      "end_percent": 1.0
+    }
+  },
+  "15": {
+    "class_type": "RescaleCFG",
+    "inputs": {
+      "model": [
+        "14",
+        0
+      ],
+      "multiplier": 0.7
+    }
+  },
+  "16": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "15",
+        0
+      ],
+      "shift": 5.0
+    }
+  },
+  "17": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "latent_image": [
+        "13",
+        0
+      ],
+      "seed": 56,
+      "steps": 12,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "18": {
+    "class_type": "VaeDecodeStructureTrellis2",
+    "inputs": {
+      "samples": [
+        "17",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ],
+      "resolution": "32"
+    }
+  },
+  "19": {
+    "class_type": "Trellis2ShapeStage",
+    "inputs": {
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "9",
+        1
+      ],
+      "voxel": [
+        "18",
+        0
+      ]
+    }
+  },
+  "20": {
+    "class_type": "CFGOverride",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "cfg": 1.0,
+      "start_percent": 0.769,
+      "end_percent": 1.0
+    }
+  },
+  "21": {
+    "class_type": "RescaleCFG",
+    "inputs": {
+      "model": [
+        "20",
+        0
+      ],
+      "multiplier": 0.5
+    }
+  },
+  "22": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "21",
+        0
+      ],
+      "positive": [
+        "19",
+        0
+      ],
+      "negative": [
+        "19",
+        1
+      ],
+      "latent_image": [
+        "19",
+        2
+      ],
+      "seed": 42,
+      "steps": 20,
+      "cfg": 7.5,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "23": {
+    "class_type": "VaeDecodeShapeTrellis",
+    "inputs": {
+      "samples": [
+        "22",
+        0
+      ],
+      "vae": [
+        "11",
+        0
+      ]
+    }
+  },
+  "24": {
+    "class_type": "Trellis2TextureStage",
+    "inputs": {
+      "positive": [
+        "19",
+        0
+      ],
+      "negative": [
+        "19",
+        1
+      ],
+      "shape_latent": [
+        "22",
+        0
+      ]
+    }
+  },
+  "25": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "positive": [
+        "24",
+        0
+      ],
+      "negative": [
+        "24",
+        1
+      ],
+      "latent_image": [
+        "24",
+        2
+      ],
+      "seed": 43,
+      "steps": 12,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0
+    }
+  },
+  "26": {
+    "class_type": "VaeDecodeTextureTrellis",
+    "inputs": {
+      "samples": [
+        "25",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ],
+      "shape_subdivides": [
+        "23",
+        1
+      ]
+    }
+  },
+  "27": {
+    "class_type": "UnwrapMesh",
+    "inputs": {
+      "mesh": [
+        "23",
+        0
+      ],
+      "segmenter": "pec",
+      "resolution": 2048,
+      "padding": 4,
+      "weld_distance": 0.0
+    }
+  },
+  "28": {
+    "class_type": "BakeTextureFromVoxel",
+    "inputs": {
+      "mesh": [
+        "27",
+        0
+      ],
+      "voxel_colors": [
+        "26",
+        0
+      ],
+      "texture_size": 2048
+    }
+  },
+  "29": {
+    "class_type": "ApplyTextureToMesh",
+    "inputs": {
+      "mesh": [
+        "27",
+        0
+      ],
+      "base_color": [
+        "28",
+        0
+      ],
+      "metallic": [
+        "28",
+        1
+      ],
+      "roughness": [
+        "28",
+        2
+      ]
+    }
+  },
+  "30": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "29",
+        0
+      ],
+      "filename_prefix": "blackwood/raw"
+    }
+  }
+}

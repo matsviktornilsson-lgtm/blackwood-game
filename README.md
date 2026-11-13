@@ -20,6 +20,7 @@ An atmospheric isometric dark-fantasy **tower defence + light colony survival** 
 - [Outstanding design choices](docs/OPEN_DECISIONS.md)
 - [Perspective comparison](docs/PERSPECTIVE_COMPARISON.md)
 - [Technical stack and Blender-free workflow](docs/TECH_STACK.md)
+- [Windows-native creature model pipeline](docs/MODEL_PIPELINE.md)
 - [Visual inspiration](inspiration/README.md)
 
 ## Current decisions
@@ -44,3 +45,5 @@ blackwood-game/
 ```
 
 Run the web prototype from `web/` with `npm ci` and `npm run dev`. Build with `npm run build`; Cloudflare Pages can serve `web/dist/`. The images are concept and promotional references, not implemented gameplay.
+
+For creature production, run `./art/tools/blackwood.ps1 doctor` from the repo root in PowerShell 7. See the [migration report](docs/MODEL_PIPELINE_MIGRATION.md) for the missing workflows and native components.
